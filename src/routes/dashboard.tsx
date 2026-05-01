@@ -1,12 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Calculator, BookOpen, TrendingUp } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  BookOpen,
+  Calculator,
+  Download,
+  FileText,
+  Link2,
+  RefreshCcw,
+  TrendingUp,
+} from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { ClientOnly } from "@/components/ClientOnly";
 import { DashboardCharts, type DashboardCourseRow } from "@/components/dashboard/DashboardCharts";
+import {
+  buildReportCsv,
+  downloadCsv,
+  downloadReportPdf,
+  type ReportExportCourse,
+} from "@/lib/report-export";
+import { encodeReportSharePayload } from "@/lib/report-share";
 import { GRADE_POINTS, calculateGPA, loadRecommendation } from "@/lib/gpa";
-import { getSession } from "@/lib/auth";
+import { getSession, type Session } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard")({
@@ -18,28 +34,61 @@ function DashboardPage() {
   const [credits, setCredits] = useState(0);
   const [count, setCount] = useState(0);
   const [courses, setCourses] = useState<DashboardCourseRow[]>([]);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [syncedAtIso, setSyncedAtIso] = useState<string | null>(null);
 
-  useEffect(() => {
+  const exportCourses: ReportExportCourse[] = useMemo(
+    () =>
+      courses.map((c) => ({
+        course_code: c.course_code,
+        course_name: c.course_name || null,
+        letter_grade: c.letter_grade,
+        credit_hours: Number(c.credit_hours),
+      })),
+    [courses],
+  );
+
+  const loadCourses = useCallback(async () => {
     const s = getSession();
     if (!s) return;
-    supabase
+
+    setSession(s);
+    setLoading(true);
+    setError(null);
+
+    const { data, error } = await supabase
       .from("courses")
-      .select("letter_grade, credit_hours, course_code")
-      .eq("student_id", s.id)
-      .then(({ data }) => {
-        if (!data) return;
-        const mapped = data.map((d) => ({
-          letter_grade: d.letter_grade,
-          credit_hours: Number(d.credit_hours),
-          course_code: (d as { course_code?: string | null }).course_code ?? null,
-        }));
-        setCourses(mapped);
-        const r = calculateGPA(mapped);
-        setGpa(r.gpa);
-        setCredits(r.totalCredits);
-        setCount(mapped.length);
-      });
+      .select("letter_grade, credit_hours, course_code, course_name")
+      .eq("student_id", s.id);
+
+    if (error) {
+      setError(error.message);
+      toast.error("Could not load courses");
+      setLoading(false);
+      return;
+    }
+
+    const mapped: DashboardCourseRow[] = (data || []).map((d) => ({
+      letter_grade: d.letter_grade,
+      credit_hours: Number(d.credit_hours),
+      course_code: (d as { course_code?: string | null }).course_code ?? null,
+      course_name: (d as { course_name?: string | null }).course_name ?? null,
+    }));
+
+    setCourses(mapped);
+    const r = calculateGPA(mapped);
+    setGpa(r.gpa);
+    setCredits(r.totalCredits);
+    setCount(mapped.length);
+    setSyncedAtIso(new Date().toISOString());
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    void loadCourses();
+  }, [loadCourses]);
 
   const rec = loadRecommendation(gpa);
   const toneClass =
@@ -48,6 +97,77 @@ function DashboardPage() {
       : rec.tone === "ok"
         ? "text-sky-300 border-sky-400/30 bg-sky-400/10"
         : "text-amber-300 border-amber-400/30 bg-amber-400/10";
+
+  const generatedAtIso = syncedAtIso || new Date().toISOString();
+  const canExport = !loading && exportCourses.length > 0;
+
+  const buildShareUrl = () => {
+    if (!session) return null;
+    const hash = encodeReportSharePayload({
+      v: 1,
+      generated_at: generatedAtIso,
+      student: {
+        full_name: session.full_name,
+        registration_number: session.registration_number,
+      },
+      courses: exportCourses,
+    });
+
+    const url = new URL(window.location.href);
+    url.pathname = "/report";
+    url.search = "";
+    url.hash = hash;
+    return url.toString();
+  };
+
+  const copyShareLink = async () => {
+    const shareUrl = buildShareUrl();
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied");
+    } catch {
+      toast.error("Could not copy share link");
+    }
+  };
+
+  const openShareReport = () => {
+    const shareUrl = buildShareUrl();
+    if (!shareUrl) return;
+    window.open(shareUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const exportCsv = () => {
+    if (!canExport) return;
+    const csv = buildReportCsv({
+      courses: exportCourses,
+      student: session
+        ? { full_name: session.full_name, registration_number: session.registration_number }
+        : undefined,
+      generatedAtIso,
+    });
+    const reg = session?.registration_number || "student";
+    downloadCsv(`edupath-report-${reg}.csv`, csv);
+    toast.success("CSV downloaded");
+  };
+
+  const exportPdf = async () => {
+    if (!canExport) return;
+    try {
+      const reg = session?.registration_number || "student";
+      await downloadReportPdf({
+        courses: exportCourses,
+        student: session
+          ? { full_name: session.full_name, registration_number: session.registration_number }
+          : undefined,
+        generatedAtIso,
+        filename: `edupath-report-${reg}.pdf`,
+      });
+      toast.success("PDF downloaded");
+    } catch {
+      toast.error("Could not generate PDF");
+    }
+  };
 
   return (
     <AppShell>
@@ -65,9 +185,24 @@ function DashboardPage() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4">
-          <StatCard icon={TrendingUp} label="Cumulative GPA" value={gpa.toFixed(2)} />
-          <StatCard icon={BookOpen} label="Total Credits" value={String(credits)} />
-          <StatCard icon={Calculator} label="Courses Saved" value={String(count)} />
+          <StatCard
+            icon={TrendingUp}
+            label="Cumulative GPA"
+            value={loading ? "—" : gpa.toFixed(2)}
+            muted={loading}
+          />
+          <StatCard
+            icon={BookOpen}
+            label="Total Credits"
+            value={loading ? "—" : String(credits)}
+            muted={loading}
+          />
+          <StatCard
+            icon={Calculator}
+            label="Courses Saved"
+            value={loading ? "—" : String(count)}
+            muted={loading}
+          />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -106,14 +241,48 @@ function DashboardPage() {
         </div>
 
         <div className="pt-2">
-          <div className="flex items-end justify-between gap-3 mb-4">
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
             <div>
               <h2 className="text-xl font-semibold">Analytics</h2>
               <p className="text-xs text-muted-foreground">
                 Visualize your performance at a glance
+                {syncedAtIso ? ` · Synced ${new Date(syncedAtIso).toLocaleString()}` : ""}
               </p>
             </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                onClick={copyShareLink}
+                disabled={!canExport || !session}
+                title="Generates a share link that includes your courses (in the URL)."
+              >
+                <Link2 className="h-4 w-4 mr-1" /> Copy Share Link
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={openShareReport}
+                disabled={!canExport || !session}
+              >
+                <Link2 className="h-4 w-4 mr-1" /> Open Report
+              </Button>
+              <Button variant="secondary" onClick={exportCsv} disabled={!canExport}>
+                <Download className="h-4 w-4 mr-1" /> CSV
+              </Button>
+              <Button onClick={exportPdf} disabled={!canExport}>
+                <FileText className="h-4 w-4 mr-1" /> PDF
+              </Button>
+              <Button variant="ghost" onClick={loadCourses} disabled={loading}>
+                <RefreshCcw className="h-4 w-4 mr-1" /> Refresh
+              </Button>
+            </div>
           </div>
+
+          {error ? (
+            <div className="glass rounded-xl p-4 border border-amber-400/30 bg-amber-400/10 text-amber-200 text-sm">
+              Could not load your courses: {error}
+            </div>
+          ) : null}
 
           <ClientOnly
             fallback={
@@ -135,17 +304,19 @@ function StatCard({
   icon: Icon,
   label,
   value,
+  muted,
 }: {
   icon: typeof Calculator;
   label: string;
   value: string;
+  muted?: boolean;
 }) {
   return (
     <div className="glass-strong rounded-2xl p-5 flex items-center gap-4">
       <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent grid place-items-center">
         <Icon className="h-6 w-6 text-primary-foreground" />
       </div>
-      <div>
+      <div className={muted ? "animate-pulse" : undefined}>
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className="text-2xl font-bold">{value}</div>
       </div>

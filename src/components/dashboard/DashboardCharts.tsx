@@ -16,6 +16,7 @@ import { calculateGPA, GRADE_OPTIONS } from "@/lib/gpa";
 
 export type DashboardCourseRow = {
   course_code: string | null;
+  course_name?: string | null;
   letter_grade: string;
   credit_hours: number;
 };
