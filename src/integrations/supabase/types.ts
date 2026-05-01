@@ -14,7 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          course_name: string
+          created_at: string
+          credit_hours: number
+          id: string
+          letter_grade: string
+          student_id: string
+        }
+        Insert: {
+          course_name: string
+          created_at?: string
+          credit_hours: number
+          id?: string
+          letter_grade: string
+          student_id: string
+        }
+        Update: {
+          course_name?: string
+          created_at?: string
+          credit_hours?: number
+          id?: string
+          letter_grade?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          created_at: string
+          enrollment_year: number | null
+          full_name: string
+          id: string
+          registration_number: string
+        }
+        Insert: {
+          created_at?: string
+          enrollment_year?: number | null
+          full_name: string
+          id?: string
+          registration_number: string
+        }
+        Update: {
+          created_at?: string
+          enrollment_year?: number | null
+          full_name?: string
+          id?: string
+          registration_number?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
