@@ -45,7 +45,7 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export async function requestEmailOtp(email: string) {
+export async function requestEmailOtp(email: string, opts?: { emailRedirectTo?: string }) {
   const e = normalizeEmail(email);
   if (!isAllowedCollegeEmail(e)) {
     throw new Error(
@@ -55,7 +55,7 @@ export async function requestEmailOtp(email: string) {
 
   const { error } = await supabase.auth.signInWithOtp({
     email: e,
-    options: { shouldCreateUser: true },
+    options: { shouldCreateUser: true, emailRedirectTo: opts?.emailRedirectTo },
   });
   if (error) throw error;
 }

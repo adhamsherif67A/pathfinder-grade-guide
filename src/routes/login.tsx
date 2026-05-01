@@ -33,7 +33,7 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await requestEmailOtp(email);
+      await requestEmailOtp(email, { emailRedirectTo: `${window.location.origin}/login` });
       toast.success("We sent a 6-digit code to your email");
       setStep("verify");
     } catch (err) {
