@@ -188,7 +188,8 @@ function ReportPage() {
               </Table>
 
               <p className="text-[11px] text-muted-foreground mt-4">
-                Tip: exports are generated locally in your browser.
+                Tip: exports are generated locally in your browser. The CSV includes summary +
+                course rows (filter by “row_type”).
               </p>
             </section>
           </>
