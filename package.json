@@ -3,6 +3,10 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "packageManager": "npm@11.11.0",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
