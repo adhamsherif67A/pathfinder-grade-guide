@@ -34,7 +34,9 @@ function LoginPage() {
     setLoading(true);
     try {
       await requestEmailOtp(email, { emailRedirectTo: `${window.location.origin}/login` });
-      toast.success("We sent a 6-digit code to your email");
+      toast.success(
+        "We sent a sign-in email. If you received a 6-digit code, enter it here. If you received a login link, click it.",
+      );
       setStep("verify");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not send code");
@@ -126,7 +128,7 @@ function LoginPage() {
           ) : (
             <form onSubmit={verifyCode} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="code">Verification Code</Label>
+                <Label htmlFor="code">Verification Code (if your email contains one)</Label>
                 <Input
                   id="code"
                   value={code}
@@ -143,6 +145,11 @@ function LoginPage() {
                 <KeyRound className="h-4 w-4 mr-1" />
                 {loading ? "Verifying..." : "Verify & continue"}
               </Button>
+              <div className="text-xs text-muted-foreground">
+                If your email shows a “Log In” button instead of a code, just click it — you’ll be
+                signed in automatically.
+              </div>
+
               <Button
                 type="button"
                 variant="ghost"
