@@ -45,120 +45,29 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export async function requestEmailOtp(email: string, opts?: { emailRedirectTo?: string }) {
-  const e = normalizeEmail(email);
-  if (!isAllowedCollegeEmail(e)) {
+export async function loginWithEmail(params: {
+  email: string;
+  registration_number: string;
+  full_name: string;
+}): Promise<Session> {
+  const email = normalizeEmail(params.email);
+  if (!isAllowedCollegeEmail(email)) {
     throw new Error(
       `Please use your college email (${ALLOWED_EMAIL_DOMAINS.map((d) => `@${d}`).join(" or ")}).`,
     );
   }
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email: e,
-    options: { shouldCreateUser: true, emailRedirectTo: opts?.emailRedirectTo },
-  });
-  if (error) throw error;
-}
-
-export async function verifyEmailOtp(params: {
-  email: string;
-  token: string;
-  registration_number: string;
-  full_name: string;
-}): Promise<Session> {
-  const email = normalizeEmail(params.email);
-  const token = params.token.trim();
-  if (!token) throw new Error("Enter the 6-digit code");
-
-  const { data, error } = await supabase.auth.verifyOtp({
-    email,
-    token,
-    type: "email",
-  });
-  if (error) throw error;
-  const user = data.user;
-  if (!user) throw new Error("Verification failed");
-
   const student = await loginOrRegister(params.registration_number, params.full_name);
-
-  const meta = (user.user_metadata || {}) as { avatar_url?: string };
-  const avatar_url = meta.avatar_url;
-
-  try {
-    await supabase.auth.updateUser({
-      data: {
-        student_id: student.id,
-        registration_number: student.registration_number,
-        full_name: student.full_name,
-        avatar_url,
-      },
-    });
-  } catch {
-    // Best-effort; local session still works.
-  }
-
-  const s: Session = {
-    ...student,
-    email: user.email || email,
-    avatar_url,
-    auth_user_id: user.id,
-  };
+  const s: Session = { ...student, email };
   setSession(s);
   return s;
 }
 
-export async function restoreSessionFromSupabase(): Promise<Session | null> {
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  if (!user) return null;
-
-  const meta = (user.user_metadata || {}) as {
-    student_id?: string;
-    registration_number?: string;
-    full_name?: string;
-    avatar_url?: string;
-  };
-
-  if (meta.student_id) {
-    const { data: student } = await supabase
-      .from("students")
-      .select("id, registration_number, full_name")
-      .eq("id", meta.student_id)
-      .maybeSingle();
-
-    if (student) {
-      const s: Session = {
-        ...(student as Session),
-        email: user.email || undefined,
-        avatar_url: meta.avatar_url,
-        auth_user_id: user.id,
-      };
-      setSession(s);
-      return s;
-    }
-  }
-
-  if (meta.registration_number && meta.full_name) {
-    const student = await loginOrRegister(meta.registration_number, meta.full_name);
-    const s: Session = {
-      ...student,
-      email: user.email || undefined,
-      avatar_url: meta.avatar_url,
-      auth_user_id: user.id,
-    };
-    setSession(s);
-    return s;
-  }
-
-  return null;
-}
-
-export async function signOut() {
-  await supabase.auth.signOut();
+export function signOut() {
   clearSession();
 }
 
-// Legacy (pre-email auth) student login: kept for compatibility and migrations.
+// Legacy (no verification) student login: kept for compatibility and migrations.
 export async function loginOrRegister(
   registration_number: string,
   full_name: string,

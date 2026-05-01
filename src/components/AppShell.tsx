@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import campusBg from "@/assets/campus-bg.jpg";
 import aastLogo from "@/assets/aast-logo.png";
 import engLogo from "@/assets/eng-logo.jpg";
-import { clearSession, restoreSessionFromSupabase, signOut, type Session } from "@/lib/auth";
+import { getSession, signOut, type Session } from "@/lib/auth";
 
 export function AppShell({
   children,
@@ -18,42 +18,21 @@ export function AppShell({
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [session, setSessionState] = useState<Session | null>(null);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(!requireAuth);
 
   useEffect(() => {
-    let cancelled = false;
+    const s = getSession();
+    setSessionState(s);
+    setReady(true);
 
-    const run = async () => {
-      const restored = await restoreSessionFromSupabase();
-      if (!cancelled) {
-        if (restored) {
-          setSessionState(restored);
-          setReady(true);
-          return;
-        }
-
-        // No Supabase auth session → treat as signed out.
-        clearSession();
-        setSessionState(null);
-        setReady(true);
-        if (requireAuth) navigate({ to: "/login" });
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [requireAuth, navigate]);
-
-  const logout = async () => {
-    try {
-      await signOut();
-    } finally {
-      clearSession();
+    if (requireAuth && !s) {
       navigate({ to: "/login" });
     }
+  }, [requireAuth, navigate]);
+
+  const logout = () => {
+    signOut();
+    navigate({ to: "/login" });
   };
 
   const initials = useMemo(() => {

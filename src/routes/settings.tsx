@@ -25,7 +25,7 @@ function SettingsPage() {
   const navigate = useNavigate();
   const session = getSession();
 
-  const [email, setEmail] = useState<string>("");
+  const [email] = useState<string>(session?.email || "");
   const [fullName, setFullName] = useState(session?.full_name || "");
   const [reg, setReg] = useState(session?.registration_number || "");
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(session?.avatar_url);
@@ -40,16 +40,10 @@ function SettingsPage() {
   }, [file]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email || "");
-      const meta = (data.user?.user_metadata || {}) as { avatar_url?: string };
-      if (meta.avatar_url && !avatarUrl) setAvatarUrl(meta.avatar_url);
-    });
-
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
-  }, [previewUrl, avatarUrl]);
+  }, [previewUrl]);
 
   if (!session) return null;
 
@@ -69,10 +63,6 @@ function SettingsPage() {
         .eq("id", session.id);
       if (error) throw error;
 
-      await supabase.auth.updateUser({
-        data: { full_name: nextName, registration_number: nextReg, student_id: session.id },
-      });
-
       setSession({ ...session, full_name: nextName, registration_number: nextReg });
       toast.success("Profile updated");
     } catch (err) {
@@ -90,41 +80,26 @@ function SettingsPage() {
 
     setUploading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-      if (!user) throw new Error("Not signed in");
-
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${user.id}/avatar.${ext}`;
-
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
-        upsert: true,
-        contentType: file.type,
+      // Store avatar locally (no email verification / no Supabase Auth required)
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Could not read image"));
+        reader.readAsDataURL(file);
       });
-      if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-      const url = pub.publicUrl;
-
-      await supabase.auth.updateUser({ data: { avatar_url: url } });
-      setAvatarUrl(url);
-      setSession({ ...session, avatar_url: url });
-
-      toast.success("Profile photo updated");
+      setAvatarUrl(dataUrl);
+      setSession({ ...session, avatar_url: dataUrl });
+      toast.success("Profile photo updated (saved on this device)");
       setFile(null);
     } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Upload failed (make sure an 'avatars' Storage bucket exists and is public)",
-      );
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
     clearSession();
     navigate({ to: "/login" });
   };
@@ -164,7 +139,7 @@ function SettingsPage() {
                 </Button>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Storage bucket required: <span className="font-mono">avatars</span>.
+                Saved locally on this device (no upload required).
               </p>
             </div>
           </div>
@@ -175,7 +150,7 @@ function SettingsPage() {
           <div className="grid sm:grid-cols-2 gap-4 mt-4">
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input value={email} readOnly className="bg-white/5 border-white/15" />
+              <Input value={email || "—"} readOnly className="bg-white/5 border-white/15" />
             </div>
             <div className="space-y-2">
               <Label>Registration number</Label>
