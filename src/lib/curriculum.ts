@@ -1,0 +1,129 @@
+// Mechatronics Engineering Curriculum — 144 Cr. Hr. / 8 Semesters
+// AAST College of Engineering and Technology — Mechanical Engineering Program (Mechatronics)
+// `uclan: true` = course delivered with University of Central Lancashire (UK)
+// (yellow-highlighted rows in the official curriculum sheet)
+
+export type CurriculumCourse = {
+  code: string;
+  name: string;
+  credits: number;
+  prerequisite?: string;
+  semester: string; // "1" - "8" or "Concentration 1" / "Concentration 2"
+  uclan?: boolean;
+};
+
+export const CURRICULUM: CurriculumCourse[] = [
+  // 1st Semester
+  { code: "EBA1203", name: "Calculus I", credits: 3, semester: "1" },
+  { code: "EBA1103", name: "Physics I", credits: 3, semester: "1" },
+  { code: "EBA1401", name: "Statics", credits: 3, semester: "1" },
+  { code: "EBA1308", name: "Chemistry", credits: 3, semester: "1" },
+  { code: "EIM1101", name: "Manufacturing Technology", credits: 2, semester: "1" },
+  { code: "UNR1403", name: "Academic English", credits: 2, semester: "1" },
+  { code: "UNR-ELE-1", name: "Elective I (University)", credits: 2, semester: "1" },
+
+  // 2nd Semester
+  { code: "EBA1204", name: "Calculus II", credits: 3, prerequisite: "EBA1203", semester: "2" },
+  { code: "EBA1104", name: "Physics II", credits: 3, prerequisite: "EBA1103", semester: "2" },
+  { code: "EBA1402", name: "Dynamics", credits: 3, prerequisite: "EBA1401", semester: "2" },
+  { code: "EME1501", name: "Engineering Drawing and Projection", credits: 3, semester: "2" },
+  { code: "ECE1101", name: "Programming Fundamentals and Problem Solving", credits: 2, semester: "2" },
+  { code: "UNR1407", name: "Academic Writing", credits: 2, prerequisite: "UNR1403", semester: "2" },
+  { code: "UNR2101", name: "Communication and Presentation Skills", credits: 2, prerequisite: "UNR1403", semester: "2" },
+
+  // 3rd Semester  (UCLAN courses begin — theme color #FFC000)
+  { code: "EBA2201", name: "Differential Equations", credits: 3, prerequisite: "EBA1204", semester: "3", uclan: true },
+  { code: "EME2302", name: "Thermodynamics I", credits: 3, prerequisite: "EBA1104", semester: "3", uclan: true },
+  { code: "EME2502", name: "Mechanical Engineering Drawing", credits: 3, prerequisite: "EME1501", semester: "3", uclan: true },
+  { code: "EME2505", name: "Theory of Machines", credits: 3, prerequisite: "EBA1402", semester: "3" },
+  { code: "EME2701", name: "Materials Science", credits: 2, prerequisite: "EBA1104 & EBA1402", semester: "3" },
+  { code: "EEE2308", name: "Electrical Engineering Fundamentals", credits: 2, prerequisite: "EBA1204 & EBA1103", semester: "3" },
+  { code: "UNR-ELE-2", name: "Elective II (University)", credits: 2, semester: "3" },
+
+  // 4th Semester
+  { code: "EBA2202", name: "Vector and Complex Analysis", credits: 3, prerequisite: "EBA2201", semester: "4" },
+  { code: "EME2401", name: "Experimental Methods & Instrumentation", credits: 3, prerequisite: "30 Cr. Hr.", semester: "4" },
+  { code: "EME2705", name: "Stress Analysis", credits: 3, prerequisite: "EME2701", semester: "4", uclan: true },
+  { code: "EME2602", name: "Fluid Mechanics I", credits: 3, prerequisite: "EBA1104", semester: "4", uclan: true },
+  { code: "EEE2209", name: "Electrical Machines", credits: 2, prerequisite: "EEE2308", semester: "4" },
+  { code: "EIM2105", name: "Manufacturing Processes", credits: 2, prerequisite: "EIM1101", semester: "4" },
+  { code: "ECE2205", name: "Digital Logic and Introduction to Microprocessors", credits: 2, prerequisite: "ECE1101", semester: "4" },
+
+  // 5th Semester
+  { code: "EBA3208", name: "Probability & Statistics", credits: 3, prerequisite: "EBA2202", semester: "5", uclan: true },
+  { code: "EME3801", name: "Internal Combustion Engines I", credits: 3, prerequisite: "EME2302", semester: "5", uclan: true },
+  { code: "EME3901", name: "Mechatronics", credits: 3, prerequisite: "ECE2205", semester: "5" },
+  { code: "EME3304", name: "Heat Transfer", credits: 3, prerequisite: "EME2302", semester: "5", uclan: true },
+  { code: "ECE3112", name: "Programming Applications", credits: 2, prerequisite: "ECE1101", semester: "5" },
+  { code: "EME3506", name: "Machine Design I", credits: 2, prerequisite: "EME2705 & EME2502", semester: "5", uclan: true },
+  { code: "EEC3318", name: "Electronics I", credits: 2, prerequisite: "EEE2308", semester: "5" },
+  { code: "EME3000", name: "Practical Training I", credits: 0, prerequisite: "54 Cr. Hr.", semester: "5" },
+
+  // 6th Semester
+  { code: "EEE3109", name: "Microcontroller Applications", credits: 3, prerequisite: "81 Cr. Hr.", semester: "6" },
+  { code: "EME3508", name: "Mechanical Vibrations", credits: 3, prerequisite: "EME2505", semester: "6", uclan: true },
+  { code: "EME3902", name: "Electromechanical Systems", credits: 3, prerequisite: "EME3901", semester: "6" },
+  { code: "EME3903", name: "Robotics Applications", credits: 3, prerequisite: "EME2505", semester: "6" },
+  { code: "EEE3107", name: "Applied Control Systems", credits: 2, prerequisite: "EEE2209", semester: "6" },
+  { code: "EEC3319", name: "Electronics II", credits: 2, prerequisite: "EEC3318", semester: "6" },
+  { code: "EME3507", name: "Machine Design II", credits: 2, prerequisite: "EME3506", semester: "6", uclan: true },
+
+  // 7th Semester
+  { code: "EME-ELE-1", name: "Elective 1 (e.g. EME4505 Computer Aided Design)", credits: 3, prerequisite: "EME3506", semester: "7", uclan: true },
+  { code: "EME-ELE-2", name: "Elective 2", credits: 3, semester: "7" },
+  { code: "EME-ELE-3", name: "Elective 3", credits: 3, semester: "7" },
+  { code: "EME4904", name: "Mechatronics Systems", credits: 3, prerequisite: "EME3901", semester: "7", uclan: true },
+  { code: "EEE4109", name: "Modern Control Engineering", credits: 2, prerequisite: "EEE3107", semester: "7" },
+  { code: "EME4905", name: "Automation of Mechanical Systems", credits: 2, prerequisite: "EME3902 & 93 Cr. Hr.", semester: "7", uclan: true },
+  { code: "EME4001", name: "Grad. Project I", credits: 2, prerequisite: "93 Cr. Hr.", semester: "7" },
+  { code: "EME4000", name: "Practical Training II", credits: 0, prerequisite: "Exx4000 & 93 Cr. Hr.", semester: "7" },
+
+  // 8th Semester
+  { code: "EME-ELE-4", name: "Elective 4", credits: 3, semester: "8" },
+  { code: "EME-ELE-5", name: "Elective 5", credits: 3, semester: "8" },
+  { code: "EME-ELE-6", name: "Elective 6", credits: 3, semester: "8" },
+  { code: "EEC4504", name: "Analog and Digital Signal Processing", credits: 3, prerequisite: "EEC3319", semester: "8" },
+  { code: "EME4002", name: "Grad. Project II", credits: 4, prerequisite: "EME4001", semester: "8" },
+  { code: "UNR4201", name: "Professional Ethics and Practice Law", credits: 2, prerequisite: "54 Cr. Hr.", semester: "8", uclan: true },
+
+  // Concentration 1 — Automation and Embedded Systems
+  { code: "EIM4303", name: "Production and Operations Management", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4208", name: "Power Plant Technology", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4204", name: "Renewable Energy Resources", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME3305", name: "Refrigeration and Air Conditioning", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4403", name: "Maintenance Planning and Management", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4505", name: "Computer Aided Design", credits: 3, prerequisite: "EME3506", semester: "Conc. 1", uclan: true },
+  { code: "EME3604", name: "Hydraulic and Pneumatic Systems", credits: 3, prerequisite: "EME2602", semester: "Conc. 1" },
+  { code: "EME4608", name: "Computational Fluid Dynamics Applications", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4801", name: "Automotive Technology", credits: 3, prerequisite: "EME3801 & 93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "ECE4617", name: "Applied AI for Mechanical Systems", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4509", name: "Optimization of Mechanical Systems", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4814", name: "Hybrid and Electrical Vehicles", credits: 3, prerequisite: "EME3801 & 93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4815", name: "Automotive Mechatronics", credits: 3, prerequisite: "EME3901 & 93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4502", name: "CAD-CAM Systems", credits: 3, prerequisite: "EME3507", semester: "Conc. 1" },
+  { code: "EME4907", name: "Biomechatronics", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4921", name: "Selected Topics in Mechatronics", credits: 3, prerequisite: "105 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4906", name: "Embedded Systems for Mechatronic Applications", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4911", name: "Industrial Robotics", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4914", name: "Mobile Robots", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4915", name: "Industrial Communication", credits: 3, prerequisite: "105 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4916", name: "Building Management Systems", credits: 3, prerequisite: "105 Cr. Hr.", semester: "Conc. 1" },
+  { code: "EME4910", name: "Micro and Nano-Electro Mechanical Systems", credits: 3, prerequisite: "105 Cr. Hr.", semester: "Conc. 1" },
+
+  // Concentration 2 — Applied Artificial Intelligence (extras unique to this track)
+  { code: "EME4922", name: "Selected Topics in AI", credits: 3, prerequisite: "105 Cr. Hr.", semester: "Conc. 2" },
+  { code: "EME4908", name: "Artificial Intelligence in Mechatronics Applications", credits: 3, prerequisite: "EME3901 & 105 Cr. Hr.", semester: "Conc. 2" },
+  { code: "EME4909", name: "Introduction to Machine Learning", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 2" },
+  { code: "EME4912", name: "Machine Vision for Mechatronic Applications", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 2" },
+  { code: "EME4913", name: "Data Analytics for Mechatronics Applications", credits: 3, prerequisite: "93 Cr. Hr.", semester: "Conc. 2" },
+  { code: "EME4917", name: "Humanoid Robots", credits: 3, prerequisite: "105 Cr. Hr.", semester: "Conc. 2" },
+  { code: "EME4918", name: "Deep Learning for Mechatronics Applications", credits: 3, prerequisite: "EME4908 & 105 Cr. Hr.", semester: "Conc. 2" },
+  { code: "EME4919", name: "Autonomous Systems", credits: 3, prerequisite: "EME4912 & 105 Cr. Hr.", semester: "Conc. 2" },
+];
+
+export const CURRICULUM_BY_CODE: Record<string, CurriculumCourse> =
+  Object.fromEntries(CURRICULUM.map((c) => [c.code, c]));
+
+export const SEMESTERS = [
+  "1", "2", "3", "4", "5", "6", "7", "8", "Conc. 1", "Conc. 2",
+] as const;

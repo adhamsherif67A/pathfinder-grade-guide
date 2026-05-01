@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       courses: {
         Row: {
+          course_code: string | null
           course_name: string
           created_at: string
           credit_hours: number
@@ -24,6 +25,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          course_code?: string | null
           course_name: string
           created_at?: string
           credit_hours: number
@@ -32,6 +34,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          course_code?: string | null
           course_name?: string
           created_at?: string
           credit_hours?: number
