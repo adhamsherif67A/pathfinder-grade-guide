@@ -7,7 +7,13 @@ import aastLogo from "@/assets/aast-logo.png";
 import engLogo from "@/assets/eng-logo.jpg";
 import { clearSession, getSession, type Session } from "@/lib/auth";
 
-export function AppShell({ children, requireAuth = true }: { children: ReactNode; requireAuth?: boolean }) {
+export function AppShell({
+  children,
+  requireAuth = true,
+}: {
+  children: ReactNode;
+  requireAuth?: boolean;
+}) {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [session, setSessionState] = useState<Session | null>(null);
@@ -60,8 +66,16 @@ export function AppShell({ children, requireAuth = true }: { children: ReactNode
 
       {/* Logos top right */}
       <div className="fixed top-3 right-3 z-30 flex items-center gap-2 glass rounded-2xl px-3 py-2">
-        <img src={engLogo} alt="College of Engineering & Technology" className="h-10 w-10 rounded-md object-cover" />
-        <img src={aastLogo} alt="AAST" className="h-10 w-auto object-contain bg-white/90 rounded-md px-1" />
+        <img
+          src={engLogo}
+          alt="College of Engineering & Technology"
+          className="h-10 w-10 rounded-md object-cover"
+        />
+        <img
+          src={aastLogo}
+          alt="AAST"
+          className="h-10 w-auto object-contain bg-white/90 rounded-md px-1"
+        />
       </div>
 
       {/* Header */}
@@ -74,7 +88,9 @@ export function AppShell({ children, requireAuth = true }: { children: ReactNode
                   <GraduationCap className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold leading-tight truncate">EduPath Analytics</div>
+                  <div className="text-sm font-semibold leading-tight truncate">
+                    EduPath Analytics
+                  </div>
                   <div className="text-[11px] text-muted-foreground leading-tight truncate">
                     {session.full_name} · {session.registration_number}
                   </div>
@@ -83,7 +99,12 @@ export function AppShell({ children, requireAuth = true }: { children: ReactNode
               <nav className="flex items-center gap-1">
                 {navItem("/dashboard", "Dashboard", LayoutDashboard)}
                 {navItem("/gpa-calculator", "GPA", Calculator)}
-                <Button variant="ghost" size="sm" onClick={logout} className="text-foreground/80 hover:text-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={logout}
+                  className="text-foreground/80 hover:text-foreground"
+                >
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline ml-1">Logout</span>
                 </Button>

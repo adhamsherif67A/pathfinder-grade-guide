@@ -103,9 +103,7 @@ function GpaCalculatorPage() {
       if (filterSem !== "all" && c.semester !== filterSem) return false;
       if (showUclanOnly && !c.uclan) return false;
       if (!q) return true;
-      return (
-        c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
-      );
+      return c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
     });
   }, [filterSem, search, showUclanOnly]);
 
@@ -346,9 +344,7 @@ function GpaCalculatorPage() {
                         min={0}
                         step={0.5}
                         value={r.credit_hours}
-                        onChange={(e) =>
-                          update(i, { credit_hours: Number(e.target.value) })
-                        }
+                        onChange={(e) => update(i, { credit_hours: Number(e.target.value) })}
                         className="bg-white/5 border-white/15"
                       />
                       <Button
@@ -381,9 +377,7 @@ function GpaCalculatorPage() {
             </div>
             <div className="mt-5 pt-5 border-t border-white/10 text-xs text-muted-foreground space-y-2">
               <div>Formula:</div>
-              <div className="font-mono text-foreground/90">
-                Σ(points × credits) / Σ(credits)
-              </div>
+              <div className="font-mono text-foreground/90">Σ(points × credits) / Σ(credits)</div>
               <div className="pt-3 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-[#FFC000]" />
                 <span>UCLAN courses (delivered with University of Central Lancashire, UK)</span>

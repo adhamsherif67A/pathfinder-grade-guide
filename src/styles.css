@@ -32,7 +32,8 @@
   --color-glass-border: var(--glass-border);
 }
 
-:root, .dark {
+:root,
+.dark {
   --radius: 0.875rem;
 
   /* Deep navy / teal academic palette */
@@ -45,13 +46,13 @@
   --popover: oklch(0.22 0.05 230);
   --popover-foreground: oklch(0.98 0.005 240);
 
-  --primary: oklch(0.72 0.13 195);            /* teal accent like the eng logo */
+  --primary: oklch(0.72 0.13 195); /* teal accent like the eng logo */
   --primary-foreground: oklch(0.15 0.04 230);
 
   --secondary: oklch(0.32 0.06 230);
   --secondary-foreground: oklch(0.98 0.005 240);
 
-  --muted: oklch(0.30 0.04 230);
+  --muted: oklch(0.3 0.04 230);
   --muted-foreground: oklch(0.78 0.02 230);
 
   --accent: oklch(0.65 0.16 200);
@@ -68,17 +69,33 @@
   --glass-border: oklch(1 0 0 / 18%);
 
   --gradient-primary: linear-gradient(135deg, oklch(0.72 0.13 195), oklch(0.55 0.15 230));
-  --gradient-overlay: linear-gradient(135deg, oklch(0.16 0.05 230 / 0.78), oklch(0.20 0.07 220 / 0.62));
+  --gradient-overlay: linear-gradient(
+    135deg,
+    oklch(0.16 0.05 230 / 0.78),
+    oklch(0.2 0.07 220 / 0.62)
+  );
   --shadow-glass: 0 10px 40px -10px oklch(0 0 0 / 0.55);
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body, #root { min-height: 100%; }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
   }
 }
 

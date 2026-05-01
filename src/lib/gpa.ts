@@ -1,16 +1,16 @@
 export const GRADE_POINTS: Record<string, number> = {
   "A+": 4.0,
-  "A": 3.83,
+  A: 3.83,
   "A-": 3.7,
   "B+": 3.3,
-  "B": 3.0,
+  B: 3.0,
   "B-": 2.7,
   "C+": 2.3,
-  "C": 2.0,
+  C: 2.0,
   "C-": 1.7,
   "D+": 1.3,
-  "D": 1.0,
-  "F": 0.0,
+  D: 1.0,
+  F: 0.0,
 };
 
 export const GRADE_OPTIONS = Object.keys(GRADE_POINTS);
@@ -43,8 +43,10 @@ export function loadRecommendation(gpa: number): {
   credits: string;
   tone: "good" | "ok" | "warn";
 } {
-  if (gpa >= 3.0) return { label: "Excellent — heavy load OK", credits: "18–21 credits", tone: "good" };
+  if (gpa >= 3.0)
+    return { label: "Excellent — heavy load OK", credits: "18–21 credits", tone: "good" };
   if (gpa >= 2.5) return { label: "Steady — standard load", credits: "15–18 credits", tone: "ok" };
-  if (gpa >= 2.0) return { label: "Caution — reduced load", credits: "12–15 credits", tone: "warn" };
+  if (gpa >= 2.0)
+    return { label: "Caution — reduced load", credits: "12–15 credits", tone: "warn" };
   return { label: "Probation — minimum load", credits: "9–12 credits", tone: "warn" };
 }

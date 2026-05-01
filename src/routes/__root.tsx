@@ -31,10 +31,16 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "EduPath Analytics Portal" },
-      { name: "description", content: "Track courses, calculate your GPA, and plan your academic load." },
+      {
+        name: "description",
+        content: "Track courses, calculate your GPA, and plan your academic load.",
+      },
       { name: "author", content: "EduPath" },
       { property: "og:title", content: "EduPath Analytics Portal" },
-      { property: "og:description", content: "Track courses, calculate your GPA, and plan your academic load." },
+      {
+        property: "og:description",
+        content: "Track courses, calculate your GPA, and plan your academic load.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },

@@ -80,7 +80,8 @@ function LoginPage() {
               {loading ? "Signing in..." : "Continue"}
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              New users are registered automatically. Returning students keep all their saved courses.
+              New users are registered automatically. Returning students keep all their saved
+              courses.
             </p>
           </form>
         </div>

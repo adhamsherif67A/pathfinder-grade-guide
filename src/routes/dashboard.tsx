@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Calculator, BookOpen, TrendingUp } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { ClientOnly } from "@/components/ClientOnly";
+import { DashboardCharts, type DashboardCourseRow } from "@/components/dashboard/DashboardCharts";
 import { GRADE_POINTS, calculateGPA, loadRecommendation } from "@/lib/gpa";
 import { getSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,20 +17,27 @@ function DashboardPage() {
   const [gpa, setGpa] = useState(0);
   const [credits, setCredits] = useState(0);
   const [count, setCount] = useState(0);
+  const [courses, setCourses] = useState<DashboardCourseRow[]>([]);
 
   useEffect(() => {
     const s = getSession();
     if (!s) return;
     supabase
       .from("courses")
-      .select("letter_grade, credit_hours")
+      .select("letter_grade, credit_hours, course_code")
       .eq("student_id", s.id)
       .then(({ data }) => {
         if (!data) return;
-        const r = calculateGPA(data);
+        const mapped = data.map((d) => ({
+          letter_grade: d.letter_grade,
+          credit_hours: Number(d.credit_hours),
+          course_code: (d as { course_code?: string | null }).course_code ?? null,
+        }));
+        setCourses(mapped);
+        const r = calculateGPA(mapped);
         setGpa(r.gpa);
         setCredits(r.totalCredits);
-        setCount(data.length);
+        setCount(mapped.length);
       });
   }, []);
 
@@ -94,6 +103,28 @@ function DashboardPage() {
               Based on cumulative GPA of {gpa.toFixed(2)}.
             </p>
           </section>
+        </div>
+
+        <div className="pt-2">
+          <div className="flex items-end justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">Analytics</h2>
+              <p className="text-xs text-muted-foreground">
+                Visualize your performance at a glance
+              </p>
+            </div>
+          </div>
+
+          <ClientOnly
+            fallback={
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="glass-strong rounded-2xl p-6 h-72" />
+                <div className="glass-strong rounded-2xl p-6 h-72" />
+              </div>
+            }
+          >
+            <DashboardCharts courses={courses} />
+          </ClientOnly>
         </div>
       </div>
     </AppShell>
