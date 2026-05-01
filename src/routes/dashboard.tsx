@@ -21,7 +21,8 @@ import {
   type ReportExportCourse,
 } from "@/lib/report-export";
 import { encodeReportSharePayload } from "@/lib/report-share";
-import { GRADE_POINTS, calculateGPA, loadRecommendation } from "@/lib/gpa";
+import { GRADE_POINTS, calculateGPA } from "@/lib/gpa";
+import { getSemesterRecommendation } from "@/lib/recommendation";
 import { getSession, type Session } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -90,7 +91,7 @@ function DashboardPage() {
     void loadCourses();
   }, [loadCourses]);
 
-  const rec = loadRecommendation(gpa);
+  const rec = getSemesterRecommendation(courses);
   const toneClass =
     rec.tone === "good"
       ? "text-emerald-300 border-emerald-400/30 bg-emerald-400/10"
@@ -233,9 +234,14 @@ function DashboardPage() {
             <div className={`glass rounded-xl p-4 border ${toneClass}`}>
               <div className="text-sm font-semibold">{rec.label}</div>
               <div className="text-xs opacity-80">Suggested next term: {rec.credits}</div>
+              <ul className="mt-3 space-y-1 text-[11px] opacity-90">
+                {rec.reasons.slice(0, 2).map((r, idx) => (
+                  <li key={idx}>• {r}</li>
+                ))}
+              </ul>
             </div>
             <p className="text-[11px] text-muted-foreground mt-3">
-              Based on cumulative GPA of {gpa.toFixed(2)}.
+              Recommendation uses both your cumulative GPA and your latest semester performance.
             </p>
           </section>
         </div>

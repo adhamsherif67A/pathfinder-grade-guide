@@ -1,11 +1,12 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LogOut, GraduationCap, Calculator, LayoutDashboard } from "lucide-react";
+import { GraduationCap, Calculator, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import campusBg from "@/assets/campus-bg.jpg";
 import aastLogo from "@/assets/aast-logo.png";
 import engLogo from "@/assets/eng-logo.jpg";
-import { clearSession, getSession, type Session } from "@/lib/auth";
+import { clearSession, restoreSessionFromSupabase, signOut, type Session } from "@/lib/auth";
 
 export function AppShell({
   children,
@@ -20,18 +21,46 @@ export function AppShell({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const s = getSession();
-    setSessionState(s);
-    setReady(true);
-    if (requireAuth && !s) navigate({ to: "/login" });
+    let cancelled = false;
+
+    const run = async () => {
+      const restored = await restoreSessionFromSupabase();
+      if (!cancelled) {
+        if (restored) {
+          setSessionState(restored);
+          setReady(true);
+          return;
+        }
+
+        // No Supabase auth session → treat as signed out.
+        clearSession();
+        setSessionState(null);
+        setReady(true);
+        if (requireAuth) navigate({ to: "/login" });
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [requireAuth, navigate]);
 
-  if (!ready) return null;
-
-  const logout = () => {
-    clearSession();
-    navigate({ to: "/login" });
+  const logout = async () => {
+    try {
+      await signOut();
+    } finally {
+      clearSession();
+      navigate({ to: "/login" });
+    }
   };
+
+  const initials = useMemo(() => {
+    if (!session?.full_name) return "U";
+    const parts = session.full_name.trim().split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "U";
+  }, [session?.full_name]);
 
   const navItem = (to: string, label: string, Icon: typeof Calculator) => {
     const active = path === to;
@@ -49,6 +78,8 @@ export function AppShell({
       </Link>
     );
   };
+
+  if (!ready) return null;
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden">
@@ -99,6 +130,23 @@ export function AppShell({
               <nav className="flex items-center gap-1">
                 {navItem("/dashboard", "Dashboard", LayoutDashboard)}
                 {navItem("/gpa-calculator", "GPA", Calculator)}
+
+                <Link
+                  to="/settings"
+                  className={`ml-1 flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-all ${
+                    path === "/settings"
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "text-foreground/80 hover:text-foreground hover:bg-white/5"
+                  }`}
+                  title="Profile & Settings"
+                >
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={session.avatar_url} alt={session.full_name} />
+                    <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                  </Avatar>
+                  <span className="hidden lg:inline">Profile</span>
+                </Link>
+
                 <Button
                   variant="ghost"
                   size="sm"

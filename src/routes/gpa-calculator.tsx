@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GRADE_OPTIONS, calculateGPA } from "@/lib/gpa";
+import { getSemesterRecommendation } from "@/lib/recommendation";
 import { CURRICULUM, CURRICULUM_BY_CODE, SEMESTERS, type CurriculumCourse } from "@/lib/curriculum";
 import { getSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,6 +168,13 @@ function GpaCalculatorPage() {
   };
 
   const { gpa, totalCredits } = calculateGPA(rows);
+  const rec = getSemesterRecommendation(rows);
+  const recToneClass =
+    rec.tone === "good"
+      ? "text-emerald-200 border-emerald-400/30 bg-emerald-400/10"
+      : rec.tone === "ok"
+        ? "text-sky-200 border-sky-400/30 bg-sky-400/10"
+        : "text-amber-200 border-amber-400/30 bg-amber-400/10";
 
   return (
     <AppShell>
@@ -375,6 +383,17 @@ function GpaCalculatorPage() {
             <div className="text-sm text-muted-foreground mt-1">
               across {totalCredits} credit hours
             </div>
+            <div className={`glass rounded-xl p-4 border mt-5 ${recToneClass}`}>
+              <div className="text-xs uppercase tracking-wider opacity-80">Next semester</div>
+              <div className="text-sm font-semibold mt-1">{rec.label}</div>
+              <div className="text-xs opacity-80 mt-1">Suggested: {rec.credits}</div>
+              <ul className="mt-3 space-y-1 text-[11px] opacity-90">
+                {rec.reasons.slice(0, 2).map((r, idx) => (
+                  <li key={idx}>• {r}</li>
+                ))}
+              </ul>
+            </div>
+
             <div className="mt-5 pt-5 border-t border-white/10 text-xs text-muted-foreground space-y-2">
               <div>Formula:</div>
               <div className="font-mono text-foreground/90">Σ(points × credits) / Σ(credits)</div>

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { CURRICULUM_BY_CODE } from "@/lib/curriculum";
 import { calculateGPA, GRADE_POINTS } from "@/lib/gpa";
+import { getSemesterRecommendation } from "@/lib/recommendation";
 import {
   buildReportCsv,
   downloadCsv,
@@ -49,6 +50,7 @@ function ReportPage() {
   }, [payload]);
 
   const summary = useMemo(() => calculateGPA(courses), [courses]);
+  const rec = useMemo(() => getSemesterRecommendation(courses), [courses]);
   const generatedAtIso = payload?.generated_at || new Date().toISOString();
 
   const copyLink = async () => {
@@ -123,6 +125,19 @@ function ReportPage() {
         ) : (
           <>
             <div className="grid sm:grid-cols-3 gap-4">
+              <div className="glass-strong rounded-2xl p-5 sm:col-span-3">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Next semester recommendation
+                </div>
+                <div className="mt-1 text-lg font-semibold">
+                  {rec.label} · {rec.credits}
+                </div>
+                <ul className="mt-2 text-sm text-muted-foreground space-y-1">
+                  {rec.reasons.slice(0, 3).map((r, idx) => (
+                    <li key={idx}>• {r}</li>
+                  ))}
+                </ul>
+              </div>
               <div className="glass-strong rounded-2xl p-5">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">GPA</div>
                 <div className="text-2xl font-bold">{summary.gpa.toFixed(2)}</div>

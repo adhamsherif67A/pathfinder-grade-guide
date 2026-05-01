@@ -1,7 +1,10 @@
 import aastLogoUrl from "@/assets/aast-logo.png";
 import engLogoUrl from "@/assets/eng-logo.jpg";
+import type { jsPDF } from "jspdf";
+import type { UserOptions } from "jspdf-autotable";
 import { CURRICULUM_BY_CODE } from "@/lib/curriculum";
 import { calculateGPA, GRADE_POINTS } from "@/lib/gpa";
+import { getSemesterRecommendation } from "@/lib/recommendation";
 
 export type ReportExportCourse = {
   course_code: string | null;
@@ -90,7 +93,7 @@ async function loadPdfImage(url: string): Promise<PdfImage | null> {
 
 function escapeCsvCell(value: unknown): string {
   const s = String(value ?? "");
-  if (/[\r\n,\"]/g.test(s)) return `"${s.replace(/\"/g, '""')}"`;
+  if (/[\r\n,"]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
@@ -136,6 +139,7 @@ export function buildReportCsv(args: {
   const normalizedCourses = normalizeCourses(args.courses);
   const cumulative = calculateGPA(normalizedCourses);
   const semesterSummary = buildSemesterSummary(normalizedCourses);
+  const rec = getSemesterRecommendation(normalizedCourses);
 
   const studentName = args.student?.full_name || "";
   const reg = args.student?.registration_number || "";
@@ -159,6 +163,11 @@ export function buildReportCsv(args: {
     "grade_points",
     "credit_hours",
     "quality_points",
+    "recommended_load",
+    "recommended_label",
+    "recommended_credits",
+    "latest_semester",
+    "latest_semester_gpa",
   ];
 
   const rows: unknown[][] = [];
@@ -182,6 +191,11 @@ export function buildReportCsv(args: {
     "",
     "",
     "",
+    rec.load,
+    rec.label,
+    rec.credits,
+    rec.latestSemester || "",
+    rec.latestSemesterGpa !== undefined ? rec.latestSemesterGpa.toFixed(2) : "",
   ]);
 
   for (const s of semesterSummary) {
@@ -198,6 +212,11 @@ export function buildReportCsv(args: {
       s.gpa.toFixed(2),
       s.credits,
       s.courses,
+      "",
+      "",
+      "",
+      "",
+      "",
       "",
       "",
       "",
@@ -244,6 +263,11 @@ export function buildReportCsv(args: {
       pts !== undefined ? pts.toFixed(2) : "",
       credits,
       pts !== undefined ? qPts.toFixed(2) : "",
+      "",
+      "",
+      "",
+      "",
+      "",
     ]);
   }
 
@@ -277,12 +301,20 @@ export async function downloadReportPdf(args: {
   const normalizedCourses = normalizeCourses(args.courses);
   const cumulative = calculateGPA(normalizedCourses);
   const semesterSummary = buildSemesterSummary(normalizedCourses);
+  const rec = getSemesterRecommendation(normalizedCourses);
+
+  type AutoTableFn = (doc: jsPDF, options: UserOptions) => void;
+  type AutoTableModule = { default?: AutoTableFn; autoTable?: AutoTableFn };
 
   const [{ jsPDF }, autoTableMod] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const autoTable =
-    (autoTableMod as any).default || (autoTableMod as any).autoTable || (autoTableMod as any);
+    (autoTableMod as unknown as AutoTableModule).default ??
+    (autoTableMod as unknown as AutoTableModule).autoTable;
+  if (!autoTable) throw new Error("Failed to load PDF table module");
 
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  type JsPdfWithAutoTable = jsPDF & { lastAutoTable?: { finalY?: number } };
+
+  const doc = new jsPDF({ unit: "pt", format: "a4" }) as JsPdfWithAutoTable;
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -405,6 +437,31 @@ export async function downloadReportPdf(args: {
 
   y = cardY + cardH + 18;
 
+  // Recommendation box
+  const recBoxH = 72;
+  doc.setDrawColor(226, 232, 240);
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(margin, y, pageWidth - margin * 2, recBoxH, 10, 10, "FD");
+
+  doc.setFontSize(10);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Next Semester Recommendation", margin + 14, y + 18);
+
+  doc.setFontSize(12);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`${rec.label} · ${rec.credits}`, margin + 14, y + 38);
+
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  const reasonText = rec.reasons
+    .slice(0, 3)
+    .map((r) => `• ${r}`)
+    .join("\n");
+  const reasonLines = doc.splitTextToSize(reasonText, pageWidth - margin * 2 - 28);
+  doc.text(reasonLines, margin + 14, y + 54);
+
+  y += recBoxH + 18;
+
   // Semester Breakdown
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
@@ -433,7 +490,7 @@ export async function downloadReportPdf(args: {
     },
   });
 
-  y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 18 : y + 80;
+  y = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 18 : y + 80;
 
   // Courses table
   doc.setFontSize(12);
