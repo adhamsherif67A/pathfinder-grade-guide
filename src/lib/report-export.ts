@@ -1,3 +1,5 @@
+import aastLogoUrl from "@/assets/aast-logo.png";
+import engLogoUrl from "@/assets/eng-logo.jpg";
 import { CURRICULUM_BY_CODE } from "@/lib/curriculum";
 import { calculateGPA, GRADE_POINTS } from "@/lib/gpa";
 
@@ -44,6 +46,46 @@ function formatDateTime(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(d);
+}
+
+type PdfImage = {
+  dataUrl: string;
+  format: "PNG" | "JPEG";
+  width: number;
+  height: number;
+};
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Failed to read image"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
+  return await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth || 1, height: img.naturalHeight || 1 });
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = dataUrl;
+  });
+}
+
+async function loadPdfImage(url: string): Promise<PdfImage | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const dataUrl = await blobToDataUrl(blob);
+    const { width, height } = await getImageSize(dataUrl);
+    const format = blob.type === "image/png" ? "PNG" : "JPEG";
+    return { dataUrl, format, width, height };
+  } catch {
+    return null;
+  }
 }
 
 function escapeCsvCell(value: unknown): string {
@@ -244,6 +286,11 @@ export async function downloadReportPdf(args: {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
+  const [aastLogo, engLogo] = await Promise.all([
+    loadPdfImage(aastLogoUrl),
+    loadPdfImage(engLogoUrl),
+  ]);
+
   const margin = 40;
   const headerH = 78;
 
@@ -253,16 +300,58 @@ export async function downloadReportPdf(args: {
   doc.setFillColor(59, 130, 246);
   doc.rect(0, headerH - 4, pageWidth, 4, "F");
 
+  const drawLogoBox = (args: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    img: PdfImage | null;
+  }) => {
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(args.x, args.y, args.w, args.h, 10, 10, "F");
+
+    if (!args.img) return;
+
+    const pad = 6;
+    const maxW = args.w - pad * 2;
+    const maxH = args.h - pad * 2;
+    const scale = Math.min(maxW / args.img.width, maxH / args.img.height);
+    const w = args.img.width * scale;
+    const h = args.img.height * scale;
+
+    doc.addImage(
+      args.img.dataUrl,
+      args.img.format,
+      args.x + (args.w - w) / 2,
+      args.y + (args.h - h) / 2,
+      w,
+      h,
+    );
+  };
+
+  // Logos (AAST + College of Engineering)
+  const logoH = 44;
+  const engW = 44;
+  const aastW = 92;
+  const logoGap = 8;
+  const logoY = 16;
+  const totalLogoW = engW + logoGap + aastW;
+  const logoX = pageWidth - margin - totalLogoW;
+
+  drawLogoBox({ x: logoX, y: logoY, w: engW, h: logoH, img: engLogo });
+  drawLogoBox({ x: logoX + engW + logoGap, y: logoY, w: aastW, h: logoH, img: aastLogo });
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
   doc.text("EduPath Analytics Portal", margin, 34);
   doc.setFontSize(12);
   doc.text("Academic Performance Report", margin, 54);
   doc.setFontSize(9);
-  doc.text(`Generated: ${generatedAtLocal}`, margin, 70);
+  doc.text("AAST · College of Engineering & Technology", margin, 66);
+  doc.text(`Generated: ${generatedAtLocal}`, margin, 76);
 
   // Student box
-  let y = headerH + 18;
+  let y = headerH + 26;
   doc.setTextColor(15, 23, 42);
 
   const studentName = args.student?.full_name || "";
