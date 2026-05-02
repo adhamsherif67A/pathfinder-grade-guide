@@ -12,9 +12,10 @@ export function setDevRole(role: AppRole) {
 }
 
 export function getDevRole(): AppRole {
-  if (typeof window === "undefined") return "admin";
+  // Always return 'student' in dev mode to show student pages only
+  if (typeof window === "undefined") return "student";
   const r = localStorage.getItem(DEV_ROLE_KEY) as AppRole | null;
-  return r ?? "admin";
+  return r ?? "student";
 }
 
 export const ALLOWED_EMAIL_DOMAINS = ["student.aast.edu", "aast.edu.eg"] as const;
@@ -124,13 +125,13 @@ export async function getAuthUser() {
 
 export async function getAppProfile(userId: string): Promise<AppProfile | null> {
   if (AUTH_DISABLED) {
-    const role = getDevRole();
+    // Always return student role in dev mode
     return {
       id: userId,
       email: "dev@local",
-      full_name: "Development User",
-      role,
-      student_id: role === "student" ? "dev-student" : null,
+      full_name: "Demo Student",
+      role: "student" as const,
+      student_id: "dev-student",
     };
   }
 

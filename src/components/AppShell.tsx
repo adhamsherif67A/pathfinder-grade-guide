@@ -7,7 +7,6 @@ import {
   LogOut,
   MessageSquare,
   Shield,
-  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -85,7 +84,7 @@ export function AppShell({
 
       // Default landing based on role
       if (path === "/dashboard" && p.role !== "student") {
-        navigate({ to: "/advisor" });
+        navigate({ to: "/dashboard" });
       }
     } finally {
       setLoading(false);
@@ -198,38 +197,28 @@ export function AppShell({
                 </Link>
 
                 <nav className="flex items-center gap-1">
-                  {role === "student" ? (
-                    <>
-                      {navItem("/dashboard", "Dashboard", LayoutDashboard)}
-                      {navItem("/gpa-calculator", "GPA", Calculator)}
-                      {navItem("/audit", "Audit", Shield)}
-                      {navItem("/planning", "Plan", Calendar)}
-                      {navItem("/messages", "Messages", MessageSquare)}
-                      {navItem("/appointments", "Appointments", Calendar)}
-                      <Link
-                        to="/settings"
-                        className={`ml-1 flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-all ${
-                          path === "/settings"
-                            ? "bg-primary/20 text-primary border border-primary/30"
-                            : "text-foreground/80 hover:text-foreground hover:bg-white/5"
-                        }`}
-                        title="Profile & Settings"
-                      >
-                        <Avatar className="h-7 w-7">
-                          <AvatarImage alt={student?.full_name || profile?.full_name || "User"} />
-                          <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-                        </Avatar>
-                        <span className="hidden lg:inline">Profile</span>
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      {navItem("/advisor", "Roster", Users)}
-                      {navItem("/appointments", "Appointments", Calendar)}
-                      {navItem("/messages", "Messages", MessageSquare)}
-                      {role === "admin" ? navItem("/admin", "Admin", Shield) : null}
-                    </>
-                  )}
+                  {/* Student-only navigation */}
+                  {navItem("/dashboard", "Dashboard", LayoutDashboard)}
+                  {navItem("/gpa-calculator", "GPA", Calculator)}
+                  {navItem("/audit", "Audit", Shield)}
+                  {navItem("/planning", "Plan", Calendar)}
+                  {navItem("/messages", "Messages", MessageSquare)}
+                  {navItem("/appointments", "Appointments", Calendar)}
+                  <Link
+                    to="/settings"
+                    className={`ml-1 flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-all ${
+                      path === "/settings"
+                        ? "bg-primary/20 text-primary border border-primary/30"
+                        : "text-foreground/80 hover:text-foreground hover:bg-white/5"
+                    }`}
+                    title="Profile & Settings"
+                  >
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage alt={student?.full_name || profile?.full_name || "User"} />
+                      <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden lg:inline">Profile</span>
+                  </Link>
 
                   <Button
                     variant="ghost"
