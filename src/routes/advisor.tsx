@@ -4,20 +4,15 @@ import {
   Users, 
   Search, 
   TrendingDown, 
-  AlertCircle, 
   CheckCircle, 
-  ArrowRight,
   User,
-  ExternalLink,
-  Filter,
   MessageSquareWarning,
   Trash2,
   Settings,
   GraduationCap,
   ClipboardCheck,
   XCircle,
-  PlusCircle,
-  History
+  PlusCircle
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -29,7 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -84,7 +78,6 @@ function AdvisorDashboard() {
   const [filter, setFilter] = useState<"all" | "at-risk" | "honor" | "graduating">("all");
   const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
   
-  // New Course Entry State
   const [newCourse, setNewCourse] = useState({ code: "", name: "", grade: "A", credits: "3" });
   const [isAddingCourse, setIsAddingCourse] = useState(false);
 
@@ -223,87 +216,85 @@ function AdvisorDashboard() {
         </div>
       </div>
 
-      {/* Responsive Grid for Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 px-1">
-        <StatTile label=\"Students\" value={overview.total} color=\"primary\" />
-        <StatTile label=\"At Risk\" value={overview.atRisk} color=\"destructive\" />
-        <StatTile label=\"Ready\" value={overview.ready} color=\"emerald\" />
-        <StatTile label=\"Avg GPA\" value={overview.avgGpa.toFixed(2)} color=\"accent\" />
+        <StatTile label="Students" value={overview.total} color="primary" />
+        <StatTile label="At Risk" value={overview.atRisk} color="destructive" />
+        <StatTile label="Ready" value={overview.ready} color="emerald" />
+        <StatTile label="Avg GPA" value={overview.avgGpa.toFixed(2)} color="accent" />
       </div>
 
-      <div className=\"glass-strong rounded-2xl p-4 sm:p-6\">
-        <div className=\"flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6\">
-          <div className=\"relative flex-1\">
-            <Search className=\"absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground\" />
+      <div className="glass-strong rounded-2xl p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder=\"Search students...\" 
-              className=\"pl-10 bg-white/5 border-white/10 w-full\"
+              placeholder="Search students..." 
+              className="pl-10 bg-white/5 border-white/10 w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className=\"flex gap-2 overflow-x-auto pb-1 sm:pb-0\">
-            <Button variant={filter === 'all' ? 'default' : 'ghost'} size=\"sm\" onClick={() => setFilter('all')}>All</Button>
-            <Button variant={filter === 'at-risk' ? 'destructive' : 'ghost'} size=\"sm\" onClick={() => setFilter('at-risk')} className=\"gap-2 whitespace-nowrap\">
-              <TrendingDown className=\"h-4 w-4\" /> At Risk
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <Button variant={filter === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('all')}>All</Button>
+            <Button variant={filter === 'at-risk' ? 'destructive' : 'ghost'} size="sm" onClick={() => setFilter('at-risk')} className="gap-2 whitespace-nowrap">
+              <TrendingDown className="h-4 w-4" /> At Risk
             </Button>
-            <Button variant={filter === 'graduating' ? 'default' : 'ghost'} size=\"sm\" onClick={() => setFilter('graduating')} className=\"gap-2 text-emerald-400 whitespace-nowrap\">
-              <GraduationCap className=\"h-4 w-4\" /> Grad Ready
+            <Button variant={filter === 'graduating' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('graduating')} className="gap-2 text-emerald-400 whitespace-nowrap">
+              <GraduationCap className="h-4 w-4" /> Grad Ready
             </Button>
           </div>
         </div>
 
-        {/* Mobile-Friendly Table / List */}
-        <div className=\"overflow-x-auto -mx-4 sm:mx-0\">
-          <table className=\"w-full text-left min-w-[600px] sm:min-w-0\">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <table className="w-full text-left min-w-[600px] sm:min-w-0">
             <thead>
-              <tr className=\"border-b border-white/10 text-[10px] uppercase tracking-widest text-muted-foreground\">
-                <th className=\"px-4 py-3\">Student Info</th>
-                <th className=\"px-4 py-3 text-center\">GPA</th>
-                <th className=\"px-4 py-3 text-center hidden sm:table-cell\">Credits</th>
-                <th className=\"px-4 py-3\">Status</th>
-                <th className=\"px-4 py-3 text-right\">Control</th>
+              <tr className="border-b border-white/10 text-[10px] uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-3">Student Info</th>
+                <th className="px-4 py-3 text-center">GPA</th>
+                <th className="px-4 py-3 text-center hidden sm:table-cell">Credits</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Control</th>
               </tr>
             </thead>
-            <tbody className=\"divide-y divide-white/5\">
+            <tbody className="divide-y divide-white/5">
               {filteredStudents.map(student => (
-                <tr key={student.id} className=\"hover:bg-white/5 transition-colors group\">
-                  <td className=\"px-4 py-4\">
-                    <div className=\"flex items-center gap-3\">
-                      <div className=\"h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 grid place-items-center shrink-0\">
-                        <User className=\"h-4 w-4 sm:h-5 sm:w-5 text-primary\" />
+                <tr key={student.id} className="hover:bg-white/5 transition-colors group">
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 grid place-items-center shrink-0">
+                        <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
-                      <div className=\"min-w-0\">
-                        <div className=\"font-semibold text-xs sm:text-sm truncate\">{student.full_name}</div>
-                        <div className=\"text-[9px] sm:text-[10px] text-muted-foreground\">Reg: {student.registration_number}</div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xs sm:text-sm truncate">{student.full_name}</div>
+                        <div className="text-[9px] sm:text-[10px] text-muted-foreground">Reg: {student.registration_number}</div>
                       </div>
                     </div>
                   </td>
-                  <td className=\"px-4 py-4 text-center\">
+                  <td className="px-4 py-4 text-center">
                     <div className={`text-sm sm:text-lg font-mono font-bold ${student.gpa < 2.0 ? 'text-destructive' : 'text-foreground'}`}>{student.gpa.toFixed(2)}</div>
                   </td>
-                  <td className=\"px-4 py-4 text-center hidden sm:table-cell\">
-                    <div className=\"text-sm font-medium\">{student.credits} / 144</div>
+                  <td className="px-4 py-4 text-center hidden sm:table-cell">
+                    <div className="text-sm font-medium">{student.credits} / 144</div>
                   </td>
-                  <td className=\"px-4 py-4\">
+                  <td className="px-4 py-4">
                     {student.stats.graduationAudit.isReady ? (
-                      <Badge className=\"bg-emerald-500/20 text-emerald-400 border-emerald-500/30 gap-1 text-[9px] sm:text-[10px]\">
-                        <ClipboardCheck className=\"h-3 w-3\" /> Ready
+                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 gap-1 text-[9px] sm:text-[10px]">
+                        <ClipboardCheck className="h-3 w-3" /> Ready
                       </Badge>
                     ) : (
-                      <Badge variant=\"outline\" className=\"text-muted-foreground gap-1 text-[9px] sm:text-[10px]\">
+                      <Badge variant="outline" className="text-muted-foreground gap-1 text-[9px] sm:text-[10px]">
                         In Progress
                       </Badge>
                     )}
                   </td>
-                  <td className=\"px-4 py-4 text-right\">
+                  <td className="px-4 py-4 text-right">
                     <Button 
-                      variant=\"ghost\" 
-                      size=\"sm\" 
-                      className=\"sm:opacity-0 group-hover:opacity-100 transition-opacity p-2\" 
+                      variant="ghost" 
+                      size="sm" 
+                      className="sm:opacity-0 group-hover:opacity-100 transition-opacity p-2" 
                       onClick={() => setSelectedStudent(student)}
                     >
-                      <Settings className=\"h-4 w-4\" />
+                      <Settings className="h-4 w-4" />
                     </Button>
                   </td>
                 </tr>
@@ -314,91 +305,90 @@ function AdvisorDashboard() {
       </div>
 
       <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
-        <DialogContent className=\"max-w-xl glass-strong border-white/10 p-0 overflow-hidden\">
-          <div className=\"p-6\">
+        <DialogContent className="max-w-xl glass-strong border-white/10 p-0 overflow-hidden">
+          <div className="p-6">
             <DialogHeader>
-              <DialogTitle className=\"flex items-center gap-2\">
-                <ClipboardCheck className=\"h-5 w-5 text-primary\" /> Academic Audit: {selectedStudent?.full_name}
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-primary" /> Academic Audit: {selectedStudent?.full_name}
               </DialogTitle>
               <DialogDescription>Registration: {selectedStudent?.registration_number}</DialogDescription>
             </DialogHeader>
 
             {selectedStudent && (
-              <div className=\"space-y-6 py-4\">
-                <div className=\"grid grid-cols-2 gap-3 sm:gap-4\">
-                  <div className=\"glass rounded-2xl p-4 border border-white/5\">
-                    <div className=\"text-[10px] uppercase text-muted-foreground mb-1\">GPA</div>
-                    <div className=\"text-2xl font-bold\">{selectedStudent.gpa.toFixed(2)}</div>
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="glass rounded-2xl p-4 border border-white/5">
+                    <div className="text-[10px] uppercase text-muted-foreground mb-1">GPA</div>
+                    <div className="text-2xl font-bold">{selectedStudent.gpa.toFixed(2)}</div>
                   </div>
-                  <div className=\"glass rounded-2xl p-4 border border-white/5\">
-                    <div className=\"text-[10px] uppercase text-muted-foreground mb-1\">Credits</div>
-                    <div className=\"text-2xl font-bold\">{selectedStudent.credits}</div>
+                  <div className="glass rounded-2xl p-4 border border-white/5">
+                    <div className="text-[10px] uppercase text-muted-foreground mb-1">Credits</div>
+                    <div className="text-2xl font-bold">{selectedStudent.credits}</div>
                   </div>
                 </div>
 
-                <section className=\"glass rounded-2xl p-4 border border-primary/20 bg-primary/5\">
-                  <h4 className=\"text-[10px] font-bold uppercase text-primary mb-3 flex items-center gap-2\">
-                    <GraduationCap className=\"h-3 w-3\" /> Graduation Checklist
+                <section className="glass rounded-2xl p-4 border border-primary/20 bg-primary/5">
+                  <h4 className="text-[10px] font-bold uppercase text-primary mb-3 flex items-center gap-2">
+                    <GraduationCap className="h-3 w-3" /> Graduation Checklist
                   </h4>
-                  <div className=\"space-y-2\">
-                    <AuditRow label=\"Min GPA (2.0+)\" isDone={selectedStudent.stats.graduationAudit.isGpaQualified} />
-                    <AuditRow label=\"144 Credits\" isDone={selectedStudent.stats.graduationAudit.totalCreditsPassed >= 144} />
-                    <AuditRow label=\"8 Core Semesters\" isDone={selectedStudent.stats.graduationAudit.coreSemestersCompleted === 8} />
-                    <AuditRow label=\"Concentration\" isDone={selectedStudent.stats.graduationAudit.concentrationCredits >= 6} />
+                  <div className="space-y-2">
+                    <AuditRow label="Min GPA (2.0+)" isDone={selectedStudent.stats.graduationAudit.isGpaQualified} />
+                    <AuditRow label="144 Credits" isDone={selectedStudent.stats.graduationAudit.totalCreditsPassed >= 144} />
+                    <AuditRow label="8 Core Semesters" isDone={selectedStudent.stats.graduationAudit.coreSemestersCompleted === 8} />
+                    <AuditRow label="Concentration" isDone={selectedStudent.stats.graduationAudit.concentrationCredits >= 6} />
                   </div>
                 </section>
 
-                {/* Advisor Power Tool: Administrative Entry */}
-                <section className=\"space-y-3\">
-                  <div className=\"flex items-center justify-between\">
-                    <h4 className=\"text-[10px] font-bold uppercase text-muted-foreground\">Administrative Record Entry</h4>
-                    <Button variant=\"ghost\" size=\"sm\" className=\"h-6 text-[9px]\" onClick={() => setIsAddingCourse(!isAddingCourse)}>
-                      {isAddingCourse ? \"Cancel\" : \"Add Course Override\"}
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-bold uppercase text-muted-foreground">Administrative Record Entry</h4>
+                    <Button variant="ghost" size="sm" className="h-6 text-[9px]" onClick={() => setIsAddingCourse(!isAddingCourse)}>
+                      {isAddingCourse ? "Cancel" : "Add Course Override"}
                     </Button>
                   </div>
                   
                   {isAddingCourse ? (
-                    <div className=\"glass rounded-xl p-4 border border-accent/20 bg-accent/5 space-y-3 animate-in fade-in slide-in-from-top-2\">
-                      <div className=\"grid grid-cols-2 gap-2\">
+                    <div className="glass rounded-xl p-4 border border-accent/20 bg-accent/5 space-y-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <Input 
-                          placeholder=\"Code (e.g. ME101)\" 
+                          placeholder="Code (e.g. ME101)" 
                           value={newCourse.code} 
                           onChange={e => setNewCourse({...newCourse, code: e.target.value})}
-                          className=\"bg-white/10 text-xs h-8\"
+                          className="bg-white/10 text-xs h-8"
                         />
                         <Input 
-                          placeholder=\"Course Name\" 
+                          placeholder="Course Name" 
                           value={newCourse.name} 
                           onChange={e => setNewCourse({...newCourse, name: e.target.value})}
-                          className=\"bg-white/10 text-xs h-8\"
+                          className="bg-white/10 text-xs h-8"
                         />
                       </div>
-                      <div className=\"grid grid-cols-2 gap-2\">
+                      <div className="grid grid-cols-2 gap-2">
                         <Select value={newCourse.grade} onValueChange={v => setNewCourse({...newCourse, grade: v})}>
-                          <SelectTrigger className=\"h-8 bg-white/10 text-xs\"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-8 bg-white/10 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {GRADE_OPTIONS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                           </SelectContent>
                         </Select>
                         <Input 
-                          type=\"number\" 
-                          placeholder=\"Credits\" 
+                          type="number" 
+                          placeholder="Credits" 
                           value={newCourse.credits} 
                           onChange={e => setNewCourse({...newCourse, credits: e.target.value})}
-                          className=\"bg-white/10 text-xs h-8\"
+                          className="bg-white/10 text-xs h-8"
                         />
                       </div>
-                      <Button className=\"w-full h-8 text-xs gap-2 bg-accent hover:bg-accent/80\" onClick={addAdminCourse}>
-                        <PlusCircle className=\"h-3 w-3\" /> Save Override Record
+                      <Button className="w-full h-8 text-xs gap-2 bg-accent hover:bg-accent/80" onClick={addAdminCourse}>
+                        <PlusCircle className="h-3 w-3" /> Save Override Record
                       </Button>
                     </div>
                   ) : (
-                    <div className=\"flex flex-wrap gap-2\">
-                      <Button variant=\"outline\" className=\"flex-1 h-9 text-[10px] gap-2 border-amber-500/20 text-amber-500 bg-amber-500/5\" onClick={sendAlert}>
-                        <MessageSquareWarning className=\"h-3 w-3\" /> Alert Student
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" className="flex-1 h-9 text-[10px] gap-2 border-amber-500/20 text-amber-500 bg-amber-500/5" onClick={sendAlert}>
+                        <MessageSquareWarning className="h-3 w-3" /> Alert Student
                       </Button>
-                      <Button variant=\"outline\" className=\"flex-1 h-9 text-[10px] gap-2 border-destructive/20 text-destructive bg-destructive/5\" onClick={clearStudentData}>
-                        <Trash2 className=\"h-3 w-3\" /> Reset Records
+                      <Button variant="outline" className="flex-1 h-9 text-[10px] gap-2 border-destructive/20 text-destructive bg-destructive/5" onClick={clearStudentData}>
+                        <Trash2 className="h-3 w-3" /> Reset Records
                       </Button>
                     </div>
                   )}
@@ -406,7 +396,7 @@ function AdvisorDashboard() {
               </div>
             )}
           </div>
-          <div className=\"bg-white/5 p-3 text-[9px] text-muted-foreground text-center border-t border-white/10\">
+          <div className="bg-white/5 p-3 text-[9px] text-muted-foreground text-center border-t border-white/10">
             All administrative actions are timestamped and logged.
           </div>
         </DialogContent>
@@ -417,25 +407,24 @@ function AdvisorDashboard() {
 
 function StatTile({ label, value, color }: { label: string, value: string | number, color: string }) {
   const borderMap: Record<string, string> = {
-    primary: \"border-primary\",
-    destructive: \"border-destructive\",
-    emerald: \"border-emerald-500\",
-    accent: \"border-accent\"
+    primary: "border-primary",
+    destructive: "border-destructive",
+    emerald: "border-emerald-500",
+    accent: "border-accent"
   };
   return (
     <div className={`glass-strong rounded-xl p-3 sm:p-4 border-l-4 ${borderMap[color] || 'border-white/10'}`}>
-      <div className=\"text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground\">{label}</div>
-      <div className=\"text-lg sm:text-xl font-bold truncate\">{value}</div>
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-lg sm:text-xl font-bold truncate">{value}</div>
     </div>
   );
 }
 
 function AuditRow({ label, isDone }: { label: string, isDone: boolean }) {
   return (
-    <div className=\"flex items-center gap-2 py-0.5\">
-      {isDone ? <CheckCircle className=\"h-3 w-3 text-emerald-400\" /> : <XCircle className=\"h-3 w-3 text-muted-foreground/30\" />}
+    <div className="flex items-center gap-2 py-0.5">
+      {isDone ? <CheckCircle className="h-3 w-3 text-emerald-400" /> : <XCircle className="h-3 w-3 text-muted-foreground/30" />}
       <span className={`text-[11px] sm:text-xs ${isDone ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>{label}</span>
     </div>
   );
 }
-
