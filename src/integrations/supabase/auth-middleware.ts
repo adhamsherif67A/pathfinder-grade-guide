@@ -9,19 +9,17 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 
-    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    // If DISABLE_AUTH is enabled or Supabase env vars are missing, bypass server-side checks and run in dev mode.
+    if (process.env.DISABLE_AUTH === "true" || !SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       const missing = [
         ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
         ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
       ];
-      const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Connect Supabase in Lovable Cloud.`;
-      console.error(`[Supabase] ${message}`);
-      throw new Response(message, { status: 500 });
-    }
+      if (!process.env.DISABLE_AUTH) {
+        const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Continuing in auth-bypass dev mode.`;
+        console.warn(`[Supabase] ${message}`);
+      }
 
-    // Bypass server-side auth checks when DISABLE_AUTH is set (dev mode).
-    if (process.env.DISABLE_AUTH === "true") {
-      const request = getRequest();
       return next({
         context: {
           supabase: undefined,
