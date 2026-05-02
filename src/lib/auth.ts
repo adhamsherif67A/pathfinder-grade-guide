@@ -50,8 +50,6 @@ export async function signInDirectly(args: {
   email: string;
   registration_number: string;
   full_name: string;
-  program?: string;
-  level?: string;
   enrollment_year?: number;
 }) {
   const reg = args.registration_number.trim();
@@ -68,8 +66,6 @@ export async function signInDirectly(args: {
       {
         registration_number: reg,
         full_name: name,
-        program: args.program?.trim() || undefined,
-        level: args.level?.trim() || undefined,
         enrollment_year: args.enrollment_year || undefined,
       },
       { onConflict: "registration_number" },
@@ -133,7 +129,7 @@ export async function getAppProfile(userId: string): Promise<AppProfile | null> 
 export async function getStudentById(studentId: string): Promise<AppStudent | null> {
   const { data, error } = await supabase
     .from("students")
-    .select("id,registration_number,full_name,enrollment_year,program,level,credits_earned")
+    .select("id,registration_number,full_name,enrollment_year,credits_earned")
     .eq("id", studentId)
     .maybeSingle();
   if (error) throw error;
@@ -143,8 +139,6 @@ export async function getStudentById(studentId: string): Promise<AppStudent | nu
     registration_number: data.registration_number,
     full_name: data.full_name,
     enrollment_year: data.enrollment_year,
-    program: data.program,
-    level: data.level,
     credits_earned: Number(data.credits_earned ?? 0),
   };
 }

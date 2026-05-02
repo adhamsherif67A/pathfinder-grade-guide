@@ -15,8 +15,6 @@ export type AppStudent = {
   registration_number: string;
   full_name: string;
   enrollment_year?: number | null;
-  program?: string | null;
-  level?: string | null;
   credits_earned?: number;
 };
 

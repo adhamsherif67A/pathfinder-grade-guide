@@ -19,8 +19,6 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [reg, setReg] = useState("");
   const [name, setName] = useState("");
-  const [program, setProgram] = useState("");
-  const [level, setLevel] = useState("");
   const [enrollmentYear, setEnrollmentYear] = useState<number | "">("");
 
   const [loading, setLoading] = useState(false);
@@ -43,8 +41,6 @@ function LoginPage() {
         email,
         registration_number: reg,
         full_name: name,
-        program: program || undefined,
-        level: level || undefined,
         enrollment_year: enrollmentYear === "" ? undefined : Number(enrollmentYear),
       });
       toast.success("Welcome to EduPath!");
@@ -123,29 +119,6 @@ function LoginPage() {
                 className="bg-white/5 border-white/15"
                 autoComplete="name"
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="program">Program</Label>
-                <Input
-                  id="program"
-                  value={program}
-                  onChange={(e) => setProgram(e.target.value)}
-                  placeholder="e.g. Mechatronics"
-                  className="bg-white/5 border-white/15"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="level">Level</Label>
-                <Input
-                  id="level"
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  placeholder="e.g. Level 3"
-                  className="bg-white/5 border-white/15"
-                />
-              </div>
             </div>
 
             <Button type="submit" disabled={loading} className="w-full" size="lg">

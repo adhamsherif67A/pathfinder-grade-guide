@@ -20,8 +20,6 @@ type StudentRow = {
   id: string;
   full_name: string;
   registration_number: string;
-  program?: string | null;
-  level?: string | null;
   enrollment_year?: number | null;
   credits_earned?: number | null;
 };
@@ -68,8 +66,6 @@ function StudentProfilePage() {
           id: devStudent.id,
           full_name: devStudent.full_name,
           registration_number: devStudent.registration_number,
-          program: devStudent.program ?? null,
-          level: devStudent.level ?? null,
           enrollment_year: null,
           credits_earned: devStudent.credits_earned,
         });
@@ -88,7 +84,7 @@ function StudentProfilePage() {
       } else {
         const { data: s, error: sErr } = await supabase
           .from("students")
-          .select("id,full_name,registration_number,program,level,enrollment_year,credits_earned")
+          .select("id,full_name,registration_number,enrollment_year,credits_earned")
           .eq("id", studentId)
           .single();
         if (sErr) throw sErr;
@@ -111,8 +107,6 @@ function StudentProfilePage() {
           id: s.id,
           full_name: s.full_name,
           registration_number: s.registration_number,
-          program: s.program ?? null,
-          level: s.level ?? null,
           enrollment_year: s.enrollment_year ?? null,
           credits_earned: Number(s.credits_earned ?? 0),
         });
@@ -230,8 +224,7 @@ function StudentProfilePage() {
                     {student.registration_number}
                   </div>
                   <div className="text-sm text-muted-foreground mt-2">
-                    {student.program || "—"} · {student.level || "—"}
-                    {student.enrollment_year ? ` · ${student.enrollment_year}` : ""}
+                    {student.enrollment_year ? `Enrolled: ${student.enrollment_year}` : "—"}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
