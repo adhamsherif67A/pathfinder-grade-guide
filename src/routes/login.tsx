@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GraduationCap, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import edupathLogo from "@/assets/edupath-logo.png";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,8 +60,8 @@ function LoginPage() {
       <div className="min-h-[80vh] grid place-items-center pt-12">
         <div className="w-full max-w-md glass-strong rounded-3xl p-8 animate-in fade-in zoom-in-95 duration-500">
           <div className="flex flex-col items-center text-center mb-6">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-accent grid place-items-center mb-3 shadow-lg">
-              <GraduationCap className="h-7 w-7 text-primary-foreground" />
+            <div className="h-14 w-14 mb-3">
+              <img src={edupathLogo} alt="EduPath" className="h-14 w-14 rounded-2xl object-contain bg-white/90 p-1 shadow-lg" />
             </div>
             <h1 className="text-2xl font-bold text-gradient">EduPath Analytics</h1>
             <p className="text-sm text-muted-foreground mt-1">

@@ -14,6 +14,7 @@ import { Route as ReportRouteImport } from './routes/report'
 import { Route as PlanningRouteImport } from './routes/planning'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LoginAdminRouteImport } from './routes/login/admin'
 import { Route as GpaCalculatorRouteImport } from './routes/gpa-calculator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuditRouteImport } from './routes/audit'
@@ -47,6 +48,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginAdminRoute = LoginAdminRouteImport.update({
+  id: '/login/admin',
+  path: '/login/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GpaCalculatorRoute = GpaCalculatorRouteImport.update({
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/login/admin': typeof LoginAdminRoute
   '/messages': typeof MessagesRoute
   '/planning': typeof PlanningRoute
   '/report': typeof ReportRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/login/admin': typeof LoginAdminRoute
   '/messages': typeof MessagesRoute
   '/planning': typeof PlanningRoute
   '/report': typeof ReportRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/login/admin': typeof LoginAdminRoute
   '/messages': typeof MessagesRoute
   '/planning': typeof PlanningRoute
   '/report': typeof ReportRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gpa-calculator'
     | '/login'
+    | '/login/admin'
     | '/messages'
     | '/planning'
     | '/report'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gpa-calculator'
     | '/login'
+    | '/login/admin'
     | '/messages'
     | '/planning'
     | '/report'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gpa-calculator'
     | '/login'
+    | '/login/admin'
     | '/messages'
     | '/planning'
     | '/report'
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GpaCalculatorRoute: typeof GpaCalculatorRoute
   LoginRoute: typeof LoginRoute
+  LoginAdminRoute: typeof LoginAdminRoute
   MessagesRoute: typeof MessagesRoute
   PlanningRoute: typeof PlanningRoute
   ReportRoute: typeof ReportRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/admin': {
+      id: '/login/admin'
+      path: '/login/admin'
+      fullPath: '/login/admin'
+      preLoaderRoute: typeof LoginAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gpa-calculator': {
@@ -324,6 +344,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GpaCalculatorRoute: GpaCalculatorRoute,
   LoginRoute: LoginRoute,
+  LoginAdminRoute: LoginAdminRoute,
   MessagesRoute: MessagesRoute,
   PlanningRoute: PlanningRoute,
   ReportRoute: ReportRoute,

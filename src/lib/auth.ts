@@ -1,6 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AppProfile, AppRole, AppStudent } from "@/lib/app-context";
 
+// Toggle this to `true` to fully disable authentication (dev mode).
+export const AUTH_DISABLED = true;
+
+const DEV_ROLE_KEY = "edupath_dev_role";
+
+export function setDevRole(role: AppRole) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(DEV_ROLE_KEY, role);
+}
+
+export function getDevRole(): AppRole {
+  if (typeof window === "undefined") return "admin";
+  const r = localStorage.getItem(DEV_ROLE_KEY) as AppRole | null;
+  return r ?? "admin";
+}
+
 export const ALLOWED_EMAIL_DOMAINS = ["student.aast.edu", "aast.edu.eg"] as const;
 
 const PENDING_KEY = "edupath_pending_onboard_v1";
@@ -68,6 +84,10 @@ export async function requestMagicLinkSignIn(args: {
     enrollment_year: args.enrollment_year,
   });
 
+  if (AUTH_DISABLED) {
+    return;
+  }
+
   const emailRedirectTo = `${window.location.origin}/auth/callback`;
   const { error } = await supabase.auth.signInWithOtp({
     email,
@@ -83,17 +103,37 @@ export async function requestMagicLinkSignIn(args: {
 }
 
 export async function signOut() {
+  if (AUTH_DISABLED) {
+    clearPendingOnboard();
+    return;
+  }
+
   await supabase.auth.signOut();
   clearPendingOnboard();
 }
 
 export async function getAuthUser() {
+  if (AUTH_DISABLED) {
+    return { id: "dev-user" } as any;
+  }
+
   const { data, error } = await supabase.auth.getUser();
   if (error) return null;
   return data.user ?? null;
 }
 
 export async function getAppProfile(userId: string): Promise<AppProfile | null> {
+  if (AUTH_DISABLED) {
+    const role = getDevRole();
+    return {
+      id: userId,
+      email: "dev@local",
+      full_name: "Development User",
+      role,
+      student_id: role === "student" ? "dev-student" : null,
+    };
+  }
+
   const { data, error } = await supabase
     .from("profiles")
     .select("id,email,full_name,role,student_id")
@@ -111,6 +151,21 @@ export async function getAppProfile(userId: string): Promise<AppProfile | null> 
 }
 
 export async function getStudentById(studentId: string): Promise<AppStudent | null> {
+  if (AUTH_DISABLED) {
+    if (studentId === "dev-student") {
+      return {
+        id: "dev-student",
+        registration_number: "00000000",
+        full_name: "Demo Student",
+        enrollment_year: 2022,
+        program: "Mechatronics",
+        level: "Level 3",
+        credits_earned: 75,
+      };
+    }
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("students")
     .select("id,registration_number,full_name,enrollment_year,program,level,credits_earned")

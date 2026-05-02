@@ -19,6 +19,18 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       throw new Response(message, { status: 500 });
     }
 
+    // Bypass server-side auth checks when DISABLE_AUTH is set (dev mode).
+    if (process.env.DISABLE_AUTH === "true") {
+      const request = getRequest();
+      return next({
+        context: {
+          supabase: undefined,
+          userId: "dev-user",
+          claims: {},
+        },
+      });
+    }
+
     const request = getRequest();
 
     if (!request?.headers) {
