@@ -209,8 +209,18 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT public.is_admin() OR public.owns_student(p_student_id) OR public.is_assigned_advisor(p_student_id);
+  SELECT 
+    public.is_admin() 
+    OR public.owns_student(p_student_id) 
+    OR public.is_assigned_advisor(p_student_id)
+    -- Allow viewing unlinked record if the user is authenticated (to allow linking)
+    OR (auth.role() = 'authenticated' AND EXISTS(SELECT 1 FROM public.students WHERE id = p_student_id AND auth_user_id IS NULL));
 $$;
+
+-- Add a more specific policy for linking
+CREATE POLICY students_link_themselves ON public.students
+  FOR UPDATE USING (auth.role() = 'authenticated' AND auth_user_id IS NULL)
+  WITH CHECK (auth.role() = 'authenticated' AND auth_user_id = auth.uid());
 
 -- 13) Auto-create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -225,7 +235,7 @@ DECLARE
 BEGIN
   email_lc := lower(COALESCE(NEW.email, ''));
   derived_role := CASE
-    WHEN email_lc LIKE '%@student.aast.edu' THEN 'student'::public.user_role
+    WHEN email_lc LIKE '%@student.aast.edu' OR email_lc LIKE '%@aast.edu.eg' THEN 'student'::public.user_role
     ELSE 'advisor'::public.user_role
   END;
 

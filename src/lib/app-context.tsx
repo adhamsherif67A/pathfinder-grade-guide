@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from "react";
 
-export type AppRole = "student" | "advisor" | "admin";
+export type AppRole = "student" | "advisor";
 
 export type AppProfile = {
   id: string;

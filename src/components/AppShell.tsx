@@ -139,9 +139,7 @@ export function AppShell({
       ? `${student?.full_name || "Student"}${student?.registration_number ? ` · ${student.registration_number}` : ""}`
       : role === "advisor"
         ? "Advisor"
-        : role === "admin"
-          ? "Admin"
-          : "";
+        : "";
 
   return (
     <AppContextProvider value={{ loading, profile, student, role, refresh }}>

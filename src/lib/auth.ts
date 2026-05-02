@@ -2,21 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AppProfile, AppRole, AppStudent } from "@/lib/app-context";
 
 // Toggle this to `true` to fully disable authentication (dev mode).
-export const AUTH_DISABLED = true;
-
-const DEV_ROLE_KEY = "edupath_dev_role";
-
-export function setDevRole(role: AppRole) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(DEV_ROLE_KEY, role);
-}
-
-export function getDevRole(): AppRole {
-  // Always return 'student' in dev mode to show student pages only
-  if (typeof window === "undefined") return "student";
-  const r = localStorage.getItem(DEV_ROLE_KEY) as AppRole | null;
-  return r ?? "student";
-}
+export const AUTH_DISABLED = false;
 
 export const ALLOWED_EMAIL_DOMAINS = ["student.aast.edu", "aast.edu.eg"] as const;
 
