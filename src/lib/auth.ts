@@ -129,7 +129,7 @@ export async function getAppProfile(userId: string): Promise<AppProfile | null> 
 export async function getStudentById(studentId: string): Promise<AppStudent | null> {
   const { data, error } = await supabase
     .from("students")
-    .select("id,registration_number,full_name,enrollment_year,credits_earned")
+    .select("id,registration_number,full_name,enrollment_year")
     .eq("id", studentId)
     .maybeSingle();
   if (error) throw error;
@@ -139,7 +139,7 @@ export async function getStudentById(studentId: string): Promise<AppStudent | nu
     registration_number: data.registration_number,
     full_name: data.full_name,
     enrollment_year: data.enrollment_year,
-    credits_earned: Number(data.credits_earned ?? 0),
+    credits_earned: 0,
   };
 }
 
