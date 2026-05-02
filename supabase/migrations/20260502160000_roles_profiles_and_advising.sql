@@ -259,162 +259,18 @@ AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 -- 14) Open RLS policies for Local Auth mode
--- NOTE: We are bypassing Supabase Auth, so we allow access to students and courses.
-
--- students
-DROP POLICY IF EXISTS students_select ON public.students;
-DROP POLICY IF EXISTS students_insert ON public.students;
-DROP POLICY IF EXISTS students_update ON public.students;
-DROP POLICY IF EXISTS students_link_themselves ON public.students;
+-- NOTE: We are bypassing Supabase Auth, so we allow access to all tables.
 
 CREATE POLICY students_all ON public.students FOR ALL USING (true) WITH CHECK (true);
-
--- courses
-DROP POLICY IF EXISTS courses_select ON public.courses;
-DROP POLICY IF EXISTS courses_insert ON public.courses;
-DROP POLICY IF EXISTS courses_update ON public.courses;
-DROP POLICY IF EXISTS courses_delete ON public.courses;
-
 CREATE POLICY courses_all ON public.courses FOR ALL USING (true) WITH CHECK (true);
-
--- profiles (keep but make open if used)
 CREATE POLICY profiles_all ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY advisor_students_all ON public.advisor_students FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY student_notes_all ON public.student_notes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY semester_plans_all ON public.semester_plans FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY planned_courses_all ON public.planned_courses FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY alerts_all ON public.alerts FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY advisor_availability_all ON public.advisor_availability FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY appointments_all ON public.appointments FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY messages_all ON public.messages FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY action_items_all ON public.action_items FOR ALL USING (true) WITH CHECK (true);
 
-
--- advisor_students
-DROP POLICY IF EXISTS advisor_students_select ON public.advisor_students;
-DROP POLICY IF EXISTS advisor_students_write ON public.advisor_students;
-CREATE POLICY advisor_students_select ON public.advisor_students
-  FOR SELECT USING (advisor_id = auth.uid() OR public.is_admin());
-CREATE POLICY advisor_students_write ON public.advisor_students
-  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
-
--- notes
-DROP POLICY IF EXISTS student_notes_select ON public.student_notes;
-DROP POLICY IF EXISTS student_notes_insert ON public.student_notes;
-DROP POLICY IF EXISTS student_notes_delete ON public.student_notes;
-CREATE POLICY student_notes_select ON public.student_notes
-  FOR SELECT USING (
-    public.can_view_student(student_id) AND (
-      public.is_admin() OR public.is_advisor() OR visibility = 'shared'
-    )
-  );
-CREATE POLICY student_notes_insert ON public.student_notes
-  FOR INSERT WITH CHECK (
-    public.can_view_student(student_id)
-    AND author_id = auth.uid()
-    AND (
-      public.is_admin() OR public.is_advisor() OR (public.owns_student(student_id) AND visibility = 'shared')
-    )
-  );
-CREATE POLICY student_notes_delete ON public.student_notes
-  FOR DELETE USING (author_id = auth.uid() OR public.is_admin());
-
--- plans
-DROP POLICY IF EXISTS semester_plans_select ON public.semester_plans;
-DROP POLICY IF EXISTS semester_plans_write ON public.semester_plans;
-CREATE POLICY semester_plans_select ON public.semester_plans
-  FOR SELECT USING (public.can_view_student(student_id));
-CREATE POLICY semester_plans_write ON public.semester_plans
-  FOR ALL USING (
-    public.can_view_student(student_id) AND (public.is_admin() OR public.is_advisor() OR public.owns_student(student_id))
-  )
-  WITH CHECK (
-    public.can_view_student(student_id)
-    AND created_by = auth.uid()
-    AND (public.is_admin() OR public.is_advisor() OR public.owns_student(student_id))
-  );
-
-DROP POLICY IF EXISTS planned_courses_select ON public.planned_courses;
-DROP POLICY IF EXISTS planned_courses_write ON public.planned_courses;
-CREATE POLICY planned_courses_select ON public.planned_courses
-  FOR SELECT USING (
-    EXISTS(
-      SELECT 1 FROM public.semester_plans p
-      WHERE p.id = plan_id AND public.can_view_student(p.student_id)
-    )
-  );
-CREATE POLICY planned_courses_write ON public.planned_courses
-  FOR ALL USING (
-    EXISTS(
-      SELECT 1 FROM public.semester_plans p
-      WHERE p.id = plan_id
-        AND public.can_view_student(p.student_id)
-        AND (public.is_admin() OR public.is_advisor() OR public.owns_student(p.student_id))
-    )
-  )
-  WITH CHECK (
-    EXISTS(
-      SELECT 1 FROM public.semester_plans p
-      WHERE p.id = plan_id
-        AND public.can_view_student(p.student_id)
-        AND (public.is_admin() OR public.is_advisor() OR public.owns_student(p.student_id))
-    )
-  );
-
--- alerts
-DROP POLICY IF EXISTS alerts_select ON public.alerts;
-DROP POLICY IF EXISTS alerts_write ON public.alerts;
-CREATE POLICY alerts_select ON public.alerts
-  FOR SELECT USING (public.can_view_student(student_id));
-CREATE POLICY alerts_write ON public.alerts
-  FOR ALL USING (public.is_admin() OR public.is_advisor())
-  WITH CHECK (public.is_admin() OR public.is_advisor());
-
--- availability / appointments
-DROP POLICY IF EXISTS advisor_availability_select ON public.advisor_availability;
-DROP POLICY IF EXISTS advisor_availability_write ON public.advisor_availability;
-CREATE POLICY advisor_availability_select ON public.advisor_availability
-  FOR SELECT USING (true);
-CREATE POLICY advisor_availability_write ON public.advisor_availability
-  FOR ALL USING (advisor_id = auth.uid() OR public.is_admin())
-  WITH CHECK (advisor_id = auth.uid() OR public.is_admin());
-
-DROP POLICY IF EXISTS appointments_select ON public.appointments;
-DROP POLICY IF EXISTS appointments_write ON public.appointments;
-CREATE POLICY appointments_select ON public.appointments
-  FOR SELECT USING (
-    public.is_admin()
-    OR advisor_id = auth.uid()
-    OR public.owns_student(student_id)
-    OR public.is_assigned_advisor(student_id)
-  );
-CREATE POLICY appointments_write ON public.appointments
-  FOR ALL USING (
-    public.is_admin()
-    OR advisor_id = auth.uid()
-    OR public.owns_student(student_id)
-  )
-  WITH CHECK (
-    public.is_admin()
-    OR advisor_id = auth.uid()
-    OR public.owns_student(student_id)
-  );
-
--- messages / action items
-DROP POLICY IF EXISTS messages_select ON public.messages;
-DROP POLICY IF EXISTS messages_insert ON public.messages;
-CREATE POLICY messages_select ON public.messages
-  FOR SELECT USING (
-    public.is_admin()
-    OR advisor_id = auth.uid()
-    OR public.owns_student(student_id)
-    OR public.is_assigned_advisor(student_id)
-  );
-CREATE POLICY messages_insert ON public.messages
-  FOR INSERT WITH CHECK (
-    sender_id = auth.uid()
-    AND (
-      public.is_admin()
-      OR advisor_id = auth.uid()
-      OR public.owns_student(student_id)
-    )
-  );
-
-DROP POLICY IF EXISTS action_items_select ON public.action_items;
-DROP POLICY IF EXISTS action_items_write ON public.action_items;
-CREATE POLICY action_items_select ON public.action_items
-  FOR SELECT USING (public.can_view_student(student_id));
-CREATE POLICY action_items_write ON public.action_items
-  FOR ALL USING (public.is_admin() OR public.is_advisor())
-  WITH CHECK (public.is_admin() OR public.is_advisor());
