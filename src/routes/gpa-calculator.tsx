@@ -179,7 +179,7 @@ function GpaCalculatorPage() {
         (r) =>
           (r.course_name.trim() || r.course_code.trim()) &&
           r.letter_grade &&
-          Number(r.credit_hours) >= 0,
+          Number(r.credit_hours) >= 1,
       );
       const { error: delErr } = await supabase
         .from("courses")
@@ -387,7 +387,7 @@ function GpaCalculatorPage() {
                       </Select>
                       <Input
                         type="number"
-                        min={0}
+                        min={1}
                         step={0.5}
                         value={r.credit_hours}
                         onChange={(e) => update(i, { credit_hours: Number(e.target.value) })}

@@ -199,11 +199,17 @@ function DashboardPage() {
           </Link>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-4 gap-4">
           <StatCard
             icon={TrendingUp}
             label="Cumulative GPA"
             value={loading ? "—" : gpa.toFixed(2)}
+            muted={loading}
+          />
+          <StatCard
+            icon={TrendingUp}
+            label="Latest Semester GPA"
+            value={loading ? "—" : rec.latestSemesterGpa !== undefined ? rec.latestSemesterGpa.toFixed(2) : "—"}
             muted={loading}
           />
           <StatCard

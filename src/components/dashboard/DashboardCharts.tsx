@@ -99,7 +99,7 @@ export function DashboardCharts({ courses }: { courses: DashboardCourseRow[] }) 
       if (counts[c.letter_grade] === undefined) continue;
       counts[c.letter_grade] += 1;
     }
-    return GRADE_OPTIONS.map((g) => ({ grade: g, count: counts[g] || 0 }));
+    return GRADE_OPTIONS.map((g) => ({ grade: g, count: counts[g] || 0 })).filter((g) => g.count > 0);
   }, [courses]);
 
   const creditsBySemester = useMemo(() => {
