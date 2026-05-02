@@ -24,10 +24,9 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
             context: {
               supabase: undefined as any, // Mock client for auth-disabled environments
               userId: "dev-user", // Mock user ID
-              claims: {}, // Empty claims, as we are bypassing auth
-            },
-          });
-        }
+              claims: {} as any, // Mock claims, as we are bypassing auth
+              },
+              });        }
 
         // Proceed with token validation only if Supabase is configured and auth is not explicitly disabled
         const request = getRequest();
