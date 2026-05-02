@@ -23,6 +23,14 @@ export type StudentStats = {
     semester: string;
     gpa: number;
   } | null;
+  graduationAudit: {
+    totalCreditsPassed: number;
+    requiredCredits: number;
+    isGpaQualified: boolean;
+    coreSemestersCompleted: number;
+    concentrationCredits: number;
+    isReady: boolean;
+  };
 };
 
 export function calculateStudentStats(
@@ -44,9 +52,7 @@ export function calculateStudentStats(
     standingTone = "good";
   }
 
-  // 2. Mechatronics Progress (Total 144 Cr. Hr. usually, but let's sum from CURRICULUM)
-  // Actually, the user might take courses not in CURRICULUM.
-  // But for Mechatronics specifically, we track progress against the 144.
+  // 2. Credits Calculation
   const totalMechatronicsCredits = 144;
   const earnedCredits = courses.reduce((acc, c) => {
     if (c.letter_grade !== "F") return acc + c.credit_hours;
@@ -83,17 +89,34 @@ export function calculateStudentStats(
     }
   });
 
-  // 5. Best Semester
+  // 5. Best Semester & Core Audit
   const semesters = new Map<string, { totalPoints: number; totalCredits: number }>();
+  const coreSems = new Set<string>();
+  let concCredits = 0;
+
   courses.forEach(c => {
     const code = (c.course_code || "").trim().toUpperCase();
-    const sem = code && CURRICULUM_BY_CODE[code]?.semester ? CURRICULUM_BY_CODE[code]!.semester : "Other";
+    const curriculum = CURRICULUM_BY_CODE[code];
+    const sem = curriculum ? curriculum.semester : "Other";
     const pts = GRADE_POINTS[c.letter_grade] || 0;
+    
+    // GPA tracking
     const current = semesters.get(sem) || { totalPoints: 0, totalCredits: 0 };
     semesters.set(sem, {
       totalPoints: current.totalPoints + pts * c.credit_hours,
       totalCredits: current.totalCredits + c.credit_hours
     });
+
+    // Core / Conc Audit
+    if (c.letter_grade !== "F") {
+      if (curriculum) {
+        if (["1", "2", "3", "4", "5", "6", "7", "8"].includes(curriculum.semester)) {
+          coreSems.add(curriculum.semester);
+        } else if (curriculum.semester.startsWith("Conc")) {
+          concCredits += c.credit_hours;
+        }
+      }
+    }
   });
 
   let bestSem: { semester: string; gpa: number } | null = null;
@@ -104,6 +127,15 @@ export function calculateStudentStats(
       bestSem = { semester: sem, gpa };
     }
   });
+
+  const audit = {
+    totalCreditsPassed: earnedCredits,
+    requiredCredits: 144,
+    isGpaQualified: cumulativeGpa >= 2.0,
+    coreSemestersCompleted: coreSems.size,
+    concentrationCredits: concCredits,
+    isReady: earnedCredits >= 144 && cumulativeGpa >= 2.0 && coreSems.size === 8
+  };
 
   return {
     academicStanding,
@@ -123,6 +155,7 @@ export function calculateStudentStats(
       topGradeCount,
       failCount
     },
-    bestSemester: bestSem
+    bestSemester: bestSem,
+    graduationAudit: audit
   };
 }
