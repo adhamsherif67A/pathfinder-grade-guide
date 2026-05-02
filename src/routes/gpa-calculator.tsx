@@ -27,7 +27,7 @@ import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/gpa-calculator")({
-  component: GpaCalculatorPage,
+  component: GpaCalculatorRoute,
 });
 
 type Row = {
@@ -53,6 +53,14 @@ function rowFromCurriculum(c: CurriculumCourse): Row {
   };
 }
 
+function GpaCalculatorRoute() {
+  return (
+    <AppShell>
+      <GpaCalculatorPage />
+    </AppShell>
+  );
+}
+
 function GpaCalculatorPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,13 +81,16 @@ function GpaCalculatorPage() {
       return;
     }
 
+    let active = true;
     setLoading(true);
-    supabase
-      .from("courses")
-      .select("id, course_name, letter_grade, credit_hours, course_code")
-      .eq("student_id", studentId)
-      .order("created_at", { ascending: true })
-      .then(({ data, error }) => {
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("courses")
+          .select("id, course_name, letter_grade, credit_hours, course_code")
+          .eq("student_id", studentId)
+          .order("created_at", { ascending: true });
+        if (!active) return;
         if (error) {
           toast.error("Could not load courses");
           setRows([emptyRow()]);
@@ -106,7 +117,17 @@ function GpaCalculatorPage() {
           setRows([emptyRow()]);
         }
         setLoading(false);
-      });
+      } catch {
+        if (!active) return;
+        toast.error("Could not load courses");
+        setRows([emptyRow()]);
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [studentId, ctxLoading]);
 
   const enrolledCodes = useMemo(
@@ -195,7 +216,6 @@ function GpaCalculatorPage() {
         : "text-amber-200 border-amber-400/30 bg-amber-400/10";
 
   return (
-    <AppShell>
       <div className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -423,6 +443,5 @@ function GpaCalculatorPage() {
           </aside>
         </div>
       </div>
-    </AppShell>
   );
 }
