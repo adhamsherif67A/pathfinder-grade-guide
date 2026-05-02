@@ -68,10 +68,13 @@ export function AppShell({
       setStudent(p.student_id ? await getStudentById(p.student_id) : null);
 
       // Default landing based on role
-      if (path === "/dashboard" && p.role === "advisor") {
-        navigate({ to: "/advisor" });
-      } else if (path === "/advisor" && p.role === "student") {
+      // If a student tries to access /advisor, redirect to /dashboard
+      if (path === "/advisor" && p.role === "student") {
         navigate({ to: "/dashboard" });
+      }
+      // If an advisor tries to access /dashboard, redirect to /advisor
+      else if (path === "/dashboard" && p.role === "advisor") {
+        navigate({ to: "/advisor" });
       }
     } finally {
       setLoading(false);
