@@ -16,11 +16,9 @@ import aastLogo from "@/assets/aast-logo.png";
 import engLogo from "@/assets/eng-logo.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  clearPendingOnboard,
   ensureStudentLinked,
   getAppProfile,
   getAuthUser,
-  getPendingOnboard,
   getStudentById,
   signOut,
 } from "@/lib/auth";
@@ -66,21 +64,8 @@ export function AppShell({
       }
 
       // Student onboarding/linking
-      if (p.role === "student" && !p.student_id) {
-        const pending = getPendingOnboard();
-        if (pending) {
-          const linked = await ensureStudentLinked({ userId: user.id, profile: p, pending });
-          setProfile(linked.profile);
-          setStudent(linked.student);
-          clearPendingOnboard();
-        } else {
-          setProfile(p);
-          setStudent(null);
-        }
-      } else {
-        setProfile(p);
-        setStudent(p.student_id ? await getStudentById(p.student_id) : null);
-      }
+      setProfile(p);
+      setStudent(p.student_id ? await getStudentById(p.student_id) : null);
 
       // Default landing based on role
       if (path === "/dashboard" && p.role === "advisor") {

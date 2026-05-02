@@ -97,7 +97,7 @@ export type Database = {
           email: string | null;
           full_name: string | null;
           id: string;
-          role: Database["public"]["Enums"]["user_role"];
+          role: "student" | "advisor";
           student_id: string | null;
           updated_at: string;
         };
@@ -106,7 +106,7 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           id: string;
-          role?: Database["public"]["Enums"]["user_role"];
+          role?: "student" | "advisor" | null;
           student_id?: string | null;
           updated_at?: string;
         };
@@ -115,7 +115,7 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           id?: string;
-          role?: Database["public"]["Enums"]["user_role"];
+          role?: "student" | "advisor" | null;
           student_id?: string | null;
           updated_at?: string;
         };

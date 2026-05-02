@@ -70,7 +70,7 @@ function StudentProfilePage() {
           registration_number: devStudent.registration_number,
           program: devStudent.program ?? null,
           level: devStudent.level ?? null,
-          enrollment_year: undefined ?? null,
+          enrollment_year: null,
           credits_earned: devStudent.credits_earned,
         });
 

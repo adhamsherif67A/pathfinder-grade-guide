@@ -22,7 +22,7 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
 
       return next({
         context: {
-          supabase: undefined,
+          supabase: undefined as any,
           userId: "dev-user",
           claims: {},
         },
