@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GpaCalculatorRouteImport } from './routes/gpa-calculator'
+import { Route as DegreePlannerRouteImport } from './routes/degree-planner'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AdvisorRouteImport } from './routes/advisor'
 import { Route as IndexRouteImport } from './routes/index'
 
 const LoginRoute = LoginRouteImport.update({
@@ -24,9 +26,19 @@ const GpaCalculatorRoute = GpaCalculatorRouteImport.update({
   path: '/gpa-calculator',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DegreePlannerRoute = DegreePlannerRouteImport.update({
+  id: '/degree-planner',
+  path: '/degree-planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdvisorRoute = AdvisorRouteImport.update({
+  id: '/advisor',
+  path: '/advisor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,34 +49,42 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/advisor': typeof AdvisorRoute
   '/dashboard': typeof DashboardRoute
+  '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/advisor': typeof AdvisorRoute
   '/dashboard': typeof DashboardRoute
+  '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/advisor': typeof AdvisorRoute
   '/dashboard': typeof DashboardRoute
+  '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/gpa-calculator' | '/login'
+  fullPaths: '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/gpa-calculator' | '/login'
-  id: '__root__' | '/' | '/dashboard' | '/gpa-calculator' | '/login'
+  to: '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login'
+  id: '__root__' | '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdvisorRoute: typeof AdvisorRoute
   DashboardRoute: typeof DashboardRoute
+  DegreePlannerRoute: typeof DegreePlannerRoute
   GpaCalculatorRoute: typeof GpaCalculatorRoute
   LoginRoute: typeof LoginRoute
 }
@@ -85,11 +105,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GpaCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/degree-planner': {
+      id: '/degree-planner'
+      path: '/degree-planner'
+      fullPath: '/degree-planner'
+      preLoaderRoute: typeof DegreePlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/advisor': {
+      id: '/advisor'
+      path: '/advisor'
+      fullPath: '/advisor'
+      preLoaderRoute: typeof AdvisorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,7 +138,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdvisorRoute: AdvisorRoute,
   DashboardRoute: DashboardRoute,
+  DegreePlannerRoute: DegreePlannerRoute,
   GpaCalculatorRoute: GpaCalculatorRoute,
   LoginRoute: LoginRoute,
 }
