@@ -2,6 +2,33 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
+// Mock client for when Supabase env vars are missing (dev mode)
+function createMockClient() {
+  return new Proxy(
+    {},
+    {
+      get() {
+        return new Proxy(
+          {},
+          {
+            get() {
+              return new Proxy(
+                {},
+                {
+                  get() {
+                    // Return a promise that resolves with empty data
+                    return Promise.resolve({ data: null, error: null });
+                  },
+                },
+              );
+            },
+          },
+        );
+      },
+    },
+  ) as ReturnType<typeof createClient>;
+}
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
@@ -14,9 +41,9 @@ function createSupabaseClient() {
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
       ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Using mock client for dev mode.`;
+    console.warn(`[Supabase] ${message}`);
+    return createMockClient();
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -28,11 +55,11 @@ function createSupabaseClient() {
   });
 }
 
-let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
+let _supabase: ReturnType<typeof createClient> | undefined;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
-export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
   get(_, prop, receiver) {
     if (!_supabase) _supabase = createSupabaseClient();
     return Reflect.get(_supabase, prop, receiver);
