@@ -158,7 +158,7 @@ export function AppShell({
             <div className="mx-auto max-w-7xl px-4 py-3 mt-2 mr-44 sm:mr-48">
               <div className="glass-strong rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3">
                 <Link
-                  to={role === "student" ? "/dashboard" : "/advisor"}
+                  to="/dashboard"
                   className="flex items-center gap-3 min-w-0"
                 >
                   <img
@@ -177,28 +177,14 @@ export function AppShell({
                 </Link>
 
                 <nav className="flex items-center gap-1">
-                  {/* Student-only navigation */}
                   {navItem("/dashboard", "Dashboard", LayoutDashboard)}
-                  {navItem("/gpa-calculator", "GPA", Calculator)}
-                  {navItem("/audit", "Audit", Shield)}
-                  {navItem("/planning", "Plan", Calendar)}
-                  {navItem("/messages", "Messages", MessageSquare)}
-                  {navItem("/appointments", "Appointments", Calendar)}
-                  <Link
-                    to="/settings"
-                    className={`ml-1 flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-all ${
-                      path === "/settings"
-                        ? "bg-primary/20 text-primary border border-primary/30"
-                        : "text-foreground/80 hover:text-foreground hover:bg-white/5"
-                    }`}
-                    title="Profile & Settings"
-                  >
+                  {navItem("/gpa-calculator", "GPA Calculator", Calculator)}
+                  <div className="ml-1 flex items-center gap-2 px-2 py-2 text-sm" title="Profile">
                     <Avatar className="h-7 w-7">
                       <AvatarImage alt={student?.full_name || profile?.full_name || "User"} />
                       <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden lg:inline">Profile</span>
-                  </Link>
+                  </div>
 
                   <Button
                     variant="ghost"
