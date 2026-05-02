@@ -107,7 +107,7 @@ function GpaCalculatorPage() {
         }
         setLoading(false);
       });
-  }, [studentId]);
+  }, [studentId, ctxLoading]);
 
   const enrolledCodes = useMemo(
     () => new Set(rows.map((r) => r.course_code).filter(Boolean)),
