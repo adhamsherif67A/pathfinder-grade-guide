@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppShell } from "@/components/AppShell";
-import { getSession, loginWithEmail } from "@/lib/auth";
+import { getAppProfile, getAuthUser, requestMagicLinkSignIn } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -18,21 +18,35 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [reg, setReg] = useState("");
   const [name, setName] = useState("");
+  const [program, setProgram] = useState("");
+  const [level, setLevel] = useState("");
+  const [enrollmentYear, setEnrollmentYear] = useState<number | "">("");
 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const s = getSession();
-    if (s) navigate({ to: "/dashboard" });
+    (async () => {
+      const user = await getAuthUser();
+      if (!user) return;
+      const profile = await getAppProfile(user.id);
+      if (!profile) return;
+      navigate({ to: profile.role === "student" ? "/dashboard" : "/advisor" });
+    })();
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const s = await loginWithEmail({ email, registration_number: reg, full_name: name });
-      toast.success(`Welcome, ${s.full_name}`);
-      navigate({ to: "/dashboard" });
+      await requestMagicLinkSignIn({
+        email,
+        registration_number: reg,
+        full_name: name,
+        program: program || undefined,
+        level: level || undefined,
+        enrollment_year: enrollmentYear === "" ? undefined : Number(enrollmentYear),
+      });
+      toast.success("Check your email for a sign-in link");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -50,7 +64,7 @@ function LoginPage() {
             </div>
             <h1 className="text-2xl font-bold text-gradient">EduPath Analytics</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Sign in with your college email + student info
+              We’ll email you a secure sign-in link.
             </p>
           </div>
 
@@ -67,20 +81,35 @@ function LoginPage() {
                 autoComplete="email"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="reg">Registration Number</Label>
-              <Input
-                id="reg"
-                value={reg}
-                onChange={(e) => setReg(e.target.value)}
-                placeholder="e.g. 22102345"
-                required
-                className="bg-white/5 border-white/15"
-                autoComplete="username"
-              />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="reg">Registration #</Label>
+                <Input
+                  id="reg"
+                  value={reg}
+                  onChange={(e) => setReg(e.target.value)}
+                  placeholder="e.g. 22102345"
+                  required
+                  className="bg-white/5 border-white/15"
+                  autoComplete="username"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="year">Enrollment year</Label>
+                <Input
+                  id="year"
+                  type="number"
+                  value={enrollmentYear}
+                  onChange={(e) => setEnrollmentYear(e.target.value ? Number(e.target.value) : "")}
+                  placeholder="e.g. 2023"
+                  className="bg-white/5 border-white/15"
+                />
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">Full name</Label>
               <Input
                 id="name"
                 value={name}
@@ -92,12 +121,35 @@ function LoginPage() {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="program">Program</Label>
+                <Input
+                  id="program"
+                  value={program}
+                  onChange={(e) => setProgram(e.target.value)}
+                  placeholder="e.g. Mechatronics"
+                  className="bg-white/5 border-white/15"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="level">Level</Label>
+                <Input
+                  id="level"
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  placeholder="e.g. Level 3"
+                  className="bg-white/5 border-white/15"
+                />
+              </div>
+            </div>
+
             <Button type="submit" disabled={loading} className="w-full" size="lg">
               <Mail className="h-4 w-4 mr-1" />
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Sending link..." : "Email me a sign-in link"}
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              No verification code required. Your student record is created/updated automatically.
+              After you click the link, we’ll automatically link/create your student record.
             </p>
           </form>
 

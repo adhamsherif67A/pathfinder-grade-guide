@@ -23,7 +23,7 @@ import {
 import { encodeReportSharePayload } from "@/lib/report-share";
 import { GRADE_POINTS, calculateGPA } from "@/lib/gpa";
 import { getSemesterRecommendation } from "@/lib/recommendation";
-import { getSession, type Session } from "@/lib/auth";
+import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard")({
@@ -35,10 +35,11 @@ function DashboardPage() {
   const [credits, setCredits] = useState(0);
   const [count, setCount] = useState(0);
   const [courses, setCourses] = useState<DashboardCourseRow[]>([]);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncedAtIso, setSyncedAtIso] = useState<string | null>(null);
+
+  const { student } = useAppContext();
 
   const exportCourses: ReportExportCourse[] = useMemo(
     () =>
@@ -52,17 +53,15 @@ function DashboardPage() {
   );
 
   const loadCourses = useCallback(async () => {
-    const s = getSession();
-    if (!s) return;
+    if (!student) return;
 
-    setSession(s);
     setLoading(true);
     setError(null);
 
     const { data, error } = await supabase
       .from("courses")
       .select("letter_grade, credit_hours, course_code, course_name")
-      .eq("student_id", s.id);
+      .eq("student_id", student.id);
 
     if (error) {
       setError(error.message);
@@ -85,7 +84,7 @@ function DashboardPage() {
     setCount(mapped.length);
     setSyncedAtIso(new Date().toISOString());
     setLoading(false);
-  }, []);
+  }, [student]);
 
   useEffect(() => {
     void loadCourses();
@@ -103,13 +102,13 @@ function DashboardPage() {
   const canExport = !loading && exportCourses.length > 0;
 
   const buildShareUrl = () => {
-    if (!session) return null;
+    if (!student) return null;
     const hash = encodeReportSharePayload({
       v: 1,
       generated_at: generatedAtIso,
       student: {
-        full_name: session.full_name,
-        registration_number: session.registration_number,
+        full_name: student.full_name,
+        registration_number: student.registration_number,
       },
       courses: exportCourses,
     });
@@ -142,12 +141,12 @@ function DashboardPage() {
     if (!canExport) return;
     const csv = buildReportCsv({
       courses: exportCourses,
-      student: session
-        ? { full_name: session.full_name, registration_number: session.registration_number }
+      student: student
+        ? { full_name: student.full_name, registration_number: student.registration_number }
         : undefined,
       generatedAtIso,
     });
-    const reg = session?.registration_number || "student";
+    const reg = student?.registration_number || "student";
     downloadCsv(`edupath-report-${reg}.csv`, csv);
     toast.success("CSV downloaded");
   };
@@ -155,11 +154,11 @@ function DashboardPage() {
   const exportPdf = async () => {
     if (!canExport) return;
     try {
-      const reg = session?.registration_number || "student";
+      const reg = student?.registration_number || "student";
       await downloadReportPdf({
         courses: exportCourses,
-        student: session
-          ? { full_name: session.full_name, registration_number: session.registration_number }
+        student: student
+          ? { full_name: student.full_name, registration_number: student.registration_number }
           : undefined,
         generatedAtIso,
         filename: `edupath-report-${reg}.pdf`,
@@ -260,7 +259,7 @@ function DashboardPage() {
               <Button
                 variant="secondary"
                 onClick={copyShareLink}
-                disabled={!canExport || !session}
+                disabled={!canExport || !student}
                 title="Generates a share link that includes your courses (in the URL)."
               >
                 <Link2 className="h-4 w-4 mr-1" /> Copy Share Link
@@ -268,7 +267,7 @@ function DashboardPage() {
               <Button
                 variant="secondary"
                 onClick={openShareReport}
-                disabled={!canExport || !session}
+                disabled={!canExport || !student}
               >
                 <Link2 className="h-4 w-4 mr-1" /> Open Report
               </Button>

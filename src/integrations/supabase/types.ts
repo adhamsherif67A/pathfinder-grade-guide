@@ -17,6 +17,8 @@ export type Database = {
           id: string;
           letter_grade: string;
           student_id: string;
+          term: string | null;
+          updated_at: string;
         };
         Insert: {
           course_code?: string | null;
@@ -26,6 +28,8 @@ export type Database = {
           id?: string;
           letter_grade: string;
           student_id: string;
+          term?: string | null;
+          updated_at?: string;
         };
         Update: {
           course_code?: string | null;
@@ -35,6 +39,8 @@ export type Database = {
           id?: string;
           letter_grade?: string;
           student_id?: string;
+          term?: string | null;
+          updated_at?: string;
         };
         Relationships: [
           {
@@ -48,27 +54,457 @@ export type Database = {
       };
       students: {
         Row: {
+          auth_user_id: string | null;
           created_at: string;
+          credits_earned: number;
           enrollment_year: number | null;
           full_name: string;
           id: string;
+          level: string | null;
+          program: string | null;
           registration_number: string;
+          updated_at: string;
         };
         Insert: {
+          auth_user_id?: string | null;
           created_at?: string;
+          credits_earned?: number;
           enrollment_year?: number | null;
           full_name: string;
           id?: string;
+          level?: string | null;
+          program?: string | null;
           registration_number: string;
+          updated_at?: string;
         };
         Update: {
+          auth_user_id?: string | null;
           created_at?: string;
+          credits_earned?: number;
           enrollment_year?: number | null;
           full_name?: string;
           id?: string;
+          level?: string | null;
+          program?: string | null;
           registration_number?: string;
+          updated_at?: string;
         };
         Relationships: [];
+      };
+      profiles: {
+        Row: {
+          created_at: string;
+          email: string | null;
+          full_name: string | null;
+          id: string;
+          role: Database["public"]["Enums"]["user_role"];
+          student_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          email?: string | null;
+          full_name?: string | null;
+          id: string;
+          role?: Database["public"]["Enums"]["user_role"];
+          student_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          email?: string | null;
+          full_name?: string | null;
+          id?: string;
+          role?: Database["public"]["Enums"]["user_role"];
+          student_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "profiles_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: true;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      advisor_students: {
+        Row: {
+          advisor_id: string;
+          created_at: string;
+          student_id: string;
+        };
+        Insert: {
+          advisor_id: string;
+          created_at?: string;
+          student_id: string;
+        };
+        Update: {
+          advisor_id?: string;
+          created_at?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "advisor_students_advisor_id_fkey";
+            columns: ["advisor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "advisor_students_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      student_notes: {
+        Row: {
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          student_id: string;
+          visibility: string;
+        };
+        Insert: {
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          student_id: string;
+          visibility: string;
+        };
+        Update: {
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          student_id?: string;
+          visibility?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_notes_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_notes_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      semester_plans: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          id: string;
+          student_id: string;
+          term: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          student_id: string;
+          term: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          student_id?: string;
+          term?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "semester_plans_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "semester_plans_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      planned_courses: {
+        Row: {
+          course_code: string | null;
+          course_name: string | null;
+          created_at: string;
+          credit_hours: number;
+          id: string;
+          plan_id: string;
+          status: string;
+        };
+        Insert: {
+          course_code?: string | null;
+          course_name?: string | null;
+          created_at?: string;
+          credit_hours?: number;
+          id?: string;
+          plan_id: string;
+          status?: string;
+        };
+        Update: {
+          course_code?: string | null;
+          course_name?: string | null;
+          created_at?: string;
+          credit_hours?: number;
+          id?: string;
+          plan_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "planned_courses_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "semester_plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      alerts: {
+        Row: {
+          created_at: string;
+          id: string;
+          message: string;
+          resolved_at: string | null;
+          severity: string;
+          student_id: string;
+          type: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          message: string;
+          resolved_at?: string | null;
+          severity: string;
+          student_id: string;
+          type: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          message?: string;
+          resolved_at?: string | null;
+          severity?: string;
+          student_id?: string;
+          type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "alerts_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      advisor_availability: {
+        Row: {
+          advisor_id: string;
+          created_at: string;
+          end_at: string;
+          id: string;
+          location: string | null;
+          start_at: string;
+        };
+        Insert: {
+          advisor_id: string;
+          created_at?: string;
+          end_at: string;
+          id?: string;
+          location?: string | null;
+          start_at: string;
+        };
+        Update: {
+          advisor_id?: string;
+          created_at?: string;
+          end_at?: string;
+          id?: string;
+          location?: string | null;
+          start_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "advisor_availability_advisor_id_fkey";
+            columns: ["advisor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      appointments: {
+        Row: {
+          advisor_id: string;
+          created_at: string;
+          end_at: string;
+          id: string;
+          note: string | null;
+          start_at: string;
+          status: string;
+          student_id: string;
+        };
+        Insert: {
+          advisor_id: string;
+          created_at?: string;
+          end_at: string;
+          id?: string;
+          note?: string | null;
+          start_at: string;
+          status?: string;
+          student_id: string;
+        };
+        Update: {
+          advisor_id?: string;
+          created_at?: string;
+          end_at?: string;
+          id?: string;
+          note?: string | null;
+          start_at?: string;
+          status?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "appointments_advisor_id_fkey";
+            columns: ["advisor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "appointments_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      messages: {
+        Row: {
+          advisor_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          sender_id: string;
+          student_id: string;
+        };
+        Insert: {
+          advisor_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          sender_id: string;
+          student_id: string;
+        };
+        Update: {
+          advisor_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          sender_id?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messages_advisor_id_fkey";
+            columns: ["advisor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      action_items: {
+        Row: {
+          assigned_to: string | null;
+          created_at: string;
+          created_by: string;
+          due_at: string | null;
+          id: string;
+          status: string;
+          student_id: string;
+          title: string;
+        };
+        Insert: {
+          assigned_to?: string | null;
+          created_at?: string;
+          created_by: string;
+          due_at?: string | null;
+          id?: string;
+          status?: string;
+          student_id: string;
+          title: string;
+        };
+        Update: {
+          assigned_to?: string | null;
+          created_at?: string;
+          created_by?: string;
+          due_at?: string | null;
+          id?: string;
+          status?: string;
+          student_id?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "action_items_assigned_to_fkey";
+            columns: ["assigned_to"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "action_items_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "action_items_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
@@ -78,7 +514,7 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      user_role: "student" | "advisor" | "admin";
     };
     CompositeTypes: {
       [_ in never]: never;

@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { clearSession, getSession, setSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppContext } from "@/lib/app-context";
+import { signOut } from "@/lib/auth";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -21,18 +22,50 @@ function initials(name: string) {
   return (a + b).toUpperCase() || "U";
 }
 
+function avatarKey(userId: string) {
+  return `edupath_avatar_v1:${userId}`;
+}
+
 function SettingsPage() {
   const navigate = useNavigate();
-  const session = getSession();
+  const { profile, student, role, refresh } = useAppContext();
 
-  const [email] = useState<string>(session?.email || "");
-  const [fullName, setFullName] = useState(session?.full_name || "");
-  const [reg, setReg] = useState(session?.registration_number || "");
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(session?.avatar_url);
+  const [fullName, setFullName] = useState("");
+  const [reg, setReg] = useState("");
+  const [program, setProgram] = useState("");
+  const [level, setLevel] = useState("");
+  const [enrollmentYear, setEnrollmentYear] = useState<number | "">("");
+
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    setFullName(student?.full_name || profile?.full_name || "");
+    setReg(student?.registration_number || "");
+    setProgram(student?.program || "");
+    setLevel(student?.level || "");
+    setEnrollmentYear(student?.enrollment_year ?? "");
+
+    if (typeof window === "undefined") return;
+    if (!profile?.id) return;
+    try {
+      const raw = localStorage.getItem(avatarKey(profile.id));
+      setAvatarUrl(raw || undefined);
+    } catch {
+      setAvatarUrl(undefined);
+    }
+  }, [
+    profile?.full_name,
+    profile?.id,
+    student?.enrollment_year,
+    student?.full_name,
+    student?.level,
+    student?.program,
+    student?.registration_number,
+  ]);
 
   const previewUrl = useMemo(() => {
     if (!file) return null;
@@ -45,26 +78,38 @@ function SettingsPage() {
     };
   }, [previewUrl]);
 
-  if (!session) return null;
+  if (!profile) return null;
 
   const onSaveProfile = async () => {
     setSaving(true);
     try {
       const nextName = fullName.trim();
       const nextReg = reg.trim();
-      if (!nextName || !nextReg) {
-        toast.error("Full name and registration number are required");
-        return;
+      if (!nextName) throw new Error("Full name is required");
+      if (role === "student" && !nextReg) throw new Error("Registration number is required");
+
+      if (role === "student" && student) {
+        const { error } = await supabase
+          .from("students")
+          .update({
+            full_name: nextName,
+            registration_number: nextReg,
+            program: program.trim() || null,
+            level: level.trim() || null,
+            enrollment_year: enrollmentYear === "" ? null : Number(enrollmentYear),
+          })
+          .eq("id", student.id);
+        if (error) throw error;
       }
 
-      const { error } = await supabase
-        .from("students")
-        .update({ full_name: nextName, registration_number: nextReg })
-        .eq("id", session.id);
-      if (error) throw error;
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({ full_name: nextName })
+        .eq("id", profile.id);
+      if (profErr) throw profErr;
 
-      setSession({ ...session, full_name: nextName, registration_number: nextReg });
       toast.success("Profile updated");
+      await refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Update failed");
     } finally {
@@ -80,7 +125,6 @@ function SettingsPage() {
 
     setUploading(true);
     try {
-      // Store avatar locally (no email verification / no Supabase Auth required)
       const dataUrl: string = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ""));
@@ -89,7 +133,9 @@ function SettingsPage() {
       });
 
       setAvatarUrl(dataUrl);
-      setSession({ ...session, avatar_url: dataUrl });
+      if (typeof window !== "undefined") {
+        localStorage.setItem(avatarKey(profile.id), dataUrl);
+      }
       toast.success("Profile photo updated (saved on this device)");
       setFile(null);
     } catch (err) {
@@ -99,8 +145,8 @@ function SettingsPage() {
     }
   };
 
-  const logout = () => {
-    clearSession();
+  const logout = async () => {
+    await signOut();
     navigate({ to: "/login" });
   };
 
@@ -109,7 +155,7 @@ function SettingsPage() {
       <div className="space-y-6 max-w-3xl">
         <div>
           <h1 className="text-3xl font-bold text-gradient">Profile & Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your student profile</p>
+          <p className="text-sm text-muted-foreground">Manage your account</p>
         </div>
 
         <section className="glass-strong rounded-2xl p-6">
@@ -120,8 +166,8 @@ function SettingsPage() {
 
           <div className="mt-4 flex flex-wrap items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={previewUrl || avatarUrl} alt={session.full_name} />
-              <AvatarFallback className="text-lg">{initials(session.full_name)}</AvatarFallback>
+              <AvatarImage src={previewUrl || avatarUrl} alt={fullName || "User"} />
+              <AvatarFallback className="text-lg">{initials(fullName || "User")}</AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-[220px] space-y-2">
@@ -138,29 +184,30 @@ function SettingsPage() {
                   Clear
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Saved locally on this device (no upload required).
-              </p>
+              <p className="text-[11px] text-muted-foreground">Saved locally on this device.</p>
             </div>
           </div>
         </section>
 
         <section className="glass-strong rounded-2xl p-6">
-          <h2 className="text-lg font-semibold">Student info</h2>
+          <h2 className="text-lg font-semibold">Info</h2>
           <div className="grid sm:grid-cols-2 gap-4 mt-4">
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input value={email || "—"} readOnly className="bg-white/5 border-white/15" />
+              <Input value={profile.email || "—"} readOnly className="bg-white/5 border-white/15" />
             </div>
-            <div className="space-y-2">
-              <Label>Registration number</Label>
-              <Input
-                value={reg}
-                onChange={(e) => setReg(e.target.value)}
-                className="bg-white/5 border-white/15"
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
+            {role === "student" ? (
+              <div className="space-y-2">
+                <Label>Registration number</Label>
+                <Input
+                  value={reg}
+                  onChange={(e) => setReg(e.target.value)}
+                  className="bg-white/5 border-white/15"
+                />
+              </div>
+            ) : null}
+
+            <div className={`space-y-2 ${role === "student" ? "sm:col-span-2" : ""}`}>
               <Label>Full name</Label>
               <Input
                 value={fullName}
@@ -168,6 +215,38 @@ function SettingsPage() {
                 className="bg-white/5 border-white/15"
               />
             </div>
+
+            {role === "student" ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Program</Label>
+                  <Input
+                    value={program}
+                    onChange={(e) => setProgram(e.target.value)}
+                    className="bg-white/5 border-white/15"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Level</Label>
+                  <Input
+                    value={level}
+                    onChange={(e) => setLevel(e.target.value)}
+                    className="bg-white/5 border-white/15"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Enrollment year</Label>
+                  <Input
+                    type="number"
+                    value={enrollmentYear}
+                    onChange={(e) =>
+                      setEnrollmentYear(e.target.value ? Number(e.target.value) : "")
+                    }
+                    className="bg-white/5 border-white/15"
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">

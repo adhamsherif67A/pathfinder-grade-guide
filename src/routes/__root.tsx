@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -30,26 +31,32 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "EduPath Analytics Portal" },
+      { title: "EduPath AAST Portal" },
       {
         name: "description",
-        content: "Track courses, calculate your GPA, and plan your academic load.",
+        content:
+          "Academic advising portal: track performance, calculate GPA, and plan your next semester.",
       },
+      { name: "theme-color", content: "#1e293b" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "EduPath" },
       { name: "author", content: "EduPath" },
-      { property: "og:title", content: "EduPath Analytics Portal" },
+      { property: "og:title", content: "EduPath AAST Portal" },
       {
         property: "og:description",
-        content: "Track courses, calculate your GPA, and plan your academic load.",
+        content:
+          "Academic advising portal: track performance, calculate GPA, and plan your next semester.",
       },
+      { property: "og:image", content: "/icons/icon-512.png" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/icons/favicon-32.png" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -72,6 +79,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    if (typeof window === "undefined") return;
+    if (!("serviceWorker" in navigator)) return;
+
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  }, []);
+
   return (
     <>
       <Outlet />

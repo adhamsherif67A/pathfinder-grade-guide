@@ -23,7 +23,7 @@ import {
 import { GRADE_OPTIONS, calculateGPA } from "@/lib/gpa";
 import { getSemesterRecommendation } from "@/lib/recommendation";
 import { CURRICULUM, CURRICULUM_BY_CODE, SEMESTERS, type CurriculumCourse } from "@/lib/curriculum";
-import { getSession } from "@/lib/auth";
+import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/gpa-calculator")({
@@ -62,15 +62,26 @@ function GpaCalculatorPage() {
   const [search, setSearch] = useState("");
   const [showUclanOnly, setShowUclanOnly] = useState(false);
 
+  const { student } = useAppContext();
+  const studentId = student?.id;
+
   useEffect(() => {
-    const s = getSession();
-    if (!s) return;
+    if (!studentId) return;
+
+    setLoading(true);
     supabase
       .from("courses")
       .select("id, course_name, letter_grade, credit_hours, course_code")
-      .eq("student_id", s.id)
+      .eq("student_id", studentId)
       .order("created_at", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          toast.error("Could not load courses");
+          setRows([emptyRow()]);
+          setLoading(false);
+          return;
+        }
+
         if (data && data.length > 0) {
           setRows(
             data.map((d) => {
@@ -91,7 +102,7 @@ function GpaCalculatorPage() {
         }
         setLoading(false);
       });
-  }, []);
+  }, [studentId]);
 
   const enrolledCodes = useMemo(
     () => new Set(rows.map((r) => r.course_code).filter(Boolean)),
@@ -135,8 +146,7 @@ function GpaCalculatorPage() {
   const reset = () => setRows([emptyRow()]);
 
   const save = async () => {
-    const s = getSession();
-    if (!s) return;
+    if (!student) return;
     setSaving(true);
     try {
       const valid = rows.filter(
@@ -145,12 +155,15 @@ function GpaCalculatorPage() {
           r.letter_grade &&
           Number(r.credit_hours) >= 0,
       );
-      const { error: delErr } = await supabase.from("courses").delete().eq("student_id", s.id);
+      const { error: delErr } = await supabase
+        .from("courses")
+        .delete()
+        .eq("student_id", student.id);
       if (delErr) throw delErr;
       if (valid.length > 0) {
         const { error: insErr } = await supabase.from("courses").insert(
           valid.map((r) => ({
-            student_id: s.id,
+            student_id: student.id,
             course_code: r.course_code.trim() || null,
             course_name: r.course_name.trim() || r.course_code.trim(),
             letter_grade: r.letter_grade,
