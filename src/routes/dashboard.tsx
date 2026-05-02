@@ -27,8 +27,16 @@ import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard")({
-  component: DashboardPage,
+  component: DashboardRoute,
 });
+
+function DashboardRoute() {
+  return (
+    <AppShell>
+      <DashboardPage />
+    </AppShell>
+  );
+}
 
 function DashboardPage() {
   const [gpa, setGpa] = useState(0);
@@ -39,7 +47,7 @@ function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [syncedAtIso, setSyncedAtIso] = useState<string | null>(null);
 
-  const { student } = useAppContext();
+  const { student, loading: ctxLoading } = useAppContext();
 
   const exportCourses: ReportExportCourse[] = useMemo(
     () =>
@@ -53,7 +61,15 @@ function DashboardPage() {
   );
 
   const loadCourses = useCallback(async () => {
-    if (!student) return;
+    if (ctxLoading) return;
+    if (!student) {
+      setCourses([]);
+      setGpa(0);
+      setCredits(0);
+      setCount(0);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -84,7 +100,7 @@ function DashboardPage() {
     setCount(mapped.length);
     setSyncedAtIso(new Date().toISOString());
     setLoading(false);
-  }, [student]);
+  }, [student, ctxLoading]);
 
   useEffect(() => {
     void loadCourses();
@@ -170,8 +186,7 @@ function DashboardPage() {
   };
 
   return (
-    <AppShell>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-3xl font-bold text-gradient">Dashboard</h1>
@@ -300,8 +315,7 @@ function DashboardPage() {
             <DashboardCharts courses={courses} />
           </ClientOnly>
         </div>
-      </div>
-    </AppShell>
+    </div>
   );
 }
 
