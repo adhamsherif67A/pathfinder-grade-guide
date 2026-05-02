@@ -29,7 +29,7 @@ function LoginPage() {
       if (!user) return;
       const profile = await getAppProfile(user.id);
       if (!profile) return;
-      navigate({ to: profile.role === "student" ? "/dashboard" : "/advisor" });
+      navigate({ to: "/dashboard" });
     })();
   }, [navigate]);
 
