@@ -27,7 +27,7 @@ import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/gpa-calculator")({
-  component: GpaCalculatorPage,
+  component: GpaCalculatorRoute,
 });
 
 type Row = {
@@ -51,6 +51,14 @@ function rowFromCurriculum(c: CurriculumCourse): Row {
     credit_hours: c.credits || 3,
     uclan: c.uclan,
   };
+}
+
+function GpaCalculatorRoute() {
+  return (
+    <AppShell>
+      <GpaCalculatorPage />
+    </AppShell>
+  );
 }
 
 function GpaCalculatorPage() {
@@ -195,7 +203,6 @@ function GpaCalculatorPage() {
         : "text-amber-200 border-amber-400/30 bg-amber-400/10";
 
   return (
-    <AppShell>
       <div className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -423,6 +430,5 @@ function GpaCalculatorPage() {
           </aside>
         </div>
       </div>
-    </AppShell>
   );
 }
