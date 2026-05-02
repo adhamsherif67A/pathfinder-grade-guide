@@ -258,64 +258,28 @@ CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- 14) Secure RLS policies
-
--- Replace legacy open policies
-DROP POLICY IF EXISTS students_select_all ON public.students;
-DROP POLICY IF EXISTS students_insert_all ON public.students;
-DROP POLICY IF EXISTS students_update_all ON public.students;
-DROP POLICY IF EXISTS courses_select_all ON public.courses;
-DROP POLICY IF EXISTS courses_insert_all ON public.courses;
-DROP POLICY IF EXISTS courses_update_all ON public.courses;
-DROP POLICY IF EXISTS courses_delete_all ON public.courses;
-
--- Ensure RLS enabled
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.advisor_students ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.student_notes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.semester_plans ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.planned_courses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.alerts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.advisor_availability ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.action_items ENABLE ROW LEVEL SECURITY;
-
--- profiles
-DROP POLICY IF EXISTS profiles_select ON public.profiles;
-DROP POLICY IF EXISTS profiles_update ON public.profiles;
-CREATE POLICY profiles_select ON public.profiles
-  FOR SELECT USING (id = auth.uid() OR public.is_admin());
-CREATE POLICY profiles_update ON public.profiles
-  FOR UPDATE USING (id = auth.uid() OR public.is_admin())
-  WITH CHECK (id = auth.uid() OR public.is_admin());
+-- 14) Open RLS policies for Local Auth mode
+-- NOTE: We are bypassing Supabase Auth, so we allow access to students and courses.
 
 -- students
 DROP POLICY IF EXISTS students_select ON public.students;
 DROP POLICY IF EXISTS students_insert ON public.students;
 DROP POLICY IF EXISTS students_update ON public.students;
-CREATE POLICY students_select ON public.students
-  FOR SELECT USING (public.can_view_student(id));
-CREATE POLICY students_insert ON public.students
-  FOR INSERT WITH CHECK (auth_user_id = auth.uid() OR public.is_admin());
-CREATE POLICY students_update ON public.students
-  FOR UPDATE USING (public.owns_student(id) OR public.is_admin())
-  WITH CHECK (public.owns_student(id) OR public.is_admin());
+DROP POLICY IF EXISTS students_link_themselves ON public.students;
+
+CREATE POLICY students_all ON public.students FOR ALL USING (true) WITH CHECK (true);
 
 -- courses
 DROP POLICY IF EXISTS courses_select ON public.courses;
 DROP POLICY IF EXISTS courses_insert ON public.courses;
 DROP POLICY IF EXISTS courses_update ON public.courses;
 DROP POLICY IF EXISTS courses_delete ON public.courses;
-CREATE POLICY courses_select ON public.courses
-  FOR SELECT USING (public.can_view_student(student_id));
-CREATE POLICY courses_insert ON public.courses
-  FOR INSERT WITH CHECK (public.owns_student(student_id) OR public.is_admin());
-CREATE POLICY courses_update ON public.courses
-  FOR UPDATE USING (public.owns_student(student_id) OR public.is_admin())
-  WITH CHECK (public.owns_student(student_id) OR public.is_admin());
-CREATE POLICY courses_delete ON public.courses
-  FOR DELETE USING (public.owns_student(student_id) OR public.is_admin());
+
+CREATE POLICY courses_all ON public.courses FOR ALL USING (true) WITH CHECK (true);
+
+-- profiles (keep but make open if used)
+CREATE POLICY profiles_all ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+
 
 -- advisor_students
 DROP POLICY IF EXISTS advisor_students_select ON public.advisor_students;

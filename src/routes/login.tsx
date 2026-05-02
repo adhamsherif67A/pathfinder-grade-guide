@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Mail } from "lucide-react";
+import { LogIn } from "lucide-react";
 import edupathLogo from "@/assets/edupath-logo.png";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppShell } from "@/components/AppShell";
-import { getAppProfile, getAuthUser, requestMagicLinkSignIn } from "@/lib/auth";
+import { getAppProfile, getAuthUser, signInDirectly } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -39,7 +39,7 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await requestMagicLinkSignIn({
+      await signInDirectly({
         email,
         registration_number: reg,
         full_name: name,
@@ -47,7 +47,8 @@ function LoginPage() {
         level: level || undefined,
         enrollment_year: enrollmentYear === "" ? undefined : Number(enrollmentYear),
       });
-      toast.success("Check your email for a sign-in link");
+      toast.success("Welcome to EduPath!");
+      navigate({ to: "/dashboard" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -65,7 +66,7 @@ function LoginPage() {
             </div>
             <h1 className="text-2xl font-bold text-gradient">EduPath Analytics</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              We’ll email you a secure sign-in link.
+              Enter your student details to continue.
             </p>
           </div>
 
@@ -146,20 +147,20 @@ function LoginPage() {
             </div>
 
             <Button type="submit" disabled={loading} className="w-full" size="lg">
-              <Mail className="h-4 w-4 mr-1" />
-              {loading ? "Sending link..." : "Email me a sign-in link"}
+              <LogIn className="h-4 w-4 mr-1" />
+              {loading ? "Signing in..." : "Sign in directly"}
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              After you click the link, we’ll automatically link/create your student record.
+              Verification is disabled. You’ll be logged in immediately.
             </p>
           </form>
 
           <div className="mt-6 text-[11px] text-muted-foreground">
-            Your email must be a college domain (e.g.{" "}
-            <span className="font-mono">@student.aast.edu</span>).
+            Your data is stored in our database based on your registration number.
           </div>
         </div>
       </div>
     </AppShell>
   );
 }
+
