@@ -116,6 +116,17 @@ export async function getAppProfile(userId: string): Promise<AppProfile | null> 
   const s = getSession();
   if (!s || s.registration_number !== userId) return null;
 
+  // If advisor, we can return the session data directly as the profile
+  if (s.role === 'advisor') {
+    return {
+      id: `adv_${s.registration_number}`,
+      email: s.registration_number,
+      full_name: s.full_name,
+      role: 'advisor',
+      student_id: null,
+    };
+  }
+
   // Find student record to get the ID
   const { data, error } = await supabase
     .from("students")
@@ -124,6 +135,9 @@ export async function getAppProfile(userId: string): Promise<AppProfile | null> 
     .maybeSingle();
 
   if (error) throw error;
+  
+  // If student record not found but session says student, we still need to handle it
+  // though typically students are upserted on login.
   if (!data) return null;
 
   return {
