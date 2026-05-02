@@ -1,12 +1,9 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Calendar,
   Calculator,
   LayoutDashboard,
   LogOut,
-  MessageSquare,
-  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,7 +13,6 @@ import aastLogo from "@/assets/aast-logo.png";
 import engLogo from "@/assets/eng-logo.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ensureStudentLinked,
   getAppProfile,
   getAuthUser,
   getStudentById,
