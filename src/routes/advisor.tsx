@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppContext } from "@/lib/app-context";
+import { AUTH_DISABLED } from "@/lib/auth";
+import { DEV_STUDENTS, DEV_ALERTS } from "@/lib/dev-data";
 
 export const Route = createFileRoute("/advisor")({
   component: AdvisorRosterPage,
@@ -60,7 +62,35 @@ function AdvisorRosterPage() {
     try {
       let roster: RosterStudent[] = [];
 
-      if (role === "admin") {
+      if (AUTH_DISABLED) {
+        // Use dev/mock data when auth is disabled
+        roster = DEV_STUDENTS.map((s) => ({
+          id: s.id,
+          full_name: s.full_name,
+          registration_number: s.registration_number,
+          program: s.program,
+          level: s.level,
+          credits_earned: s.credits_earned,
+        }));
+
+        const byStudent = new Map<string, { open: number; critical: number }>();
+        for (const a of DEV_ALERTS) {
+          const sid = a.student_id;
+          const prev = byStudent.get(sid) || { open: 0, critical: 0 };
+          prev.open += 1;
+          if (a.severity === "critical") prev.critical += 1;
+          byStudent.set(sid, prev);
+        }
+
+        roster = roster.map((s) => {
+          const c = byStudent.get(s.id);
+          return {
+            ...s,
+            openAlerts: c?.open ?? 0,
+            criticalAlerts: c?.critical ?? 0,
+          };
+        });
+      } else if (role === "admin") {
         const { data, error } = await supabase
           .from("students")
           .select("id,full_name,registration_number,program,level,credits_earned")
@@ -96,33 +126,36 @@ function AdvisorRosterPage() {
           .sort((a, b) => a.full_name.localeCompare(b.full_name));
       }
 
-      const ids = roster.map((s) => s.id);
-      if (ids.length) {
-        const { data: alerts, error: aErr } = await supabase
-          .from("alerts")
-          .select("student_id,severity,resolved_at")
-          .in("student_id", ids)
-          .is("resolved_at", null);
-        if (aErr) throw aErr;
+      // Only fetch alert details if NOT in dev mode (Supabase queries will fail anyway)
+      if (!AUTH_DISABLED) {
+        const ids = roster.map((s) => s.id);
+        if (ids.length) {
+          const { data: alerts, error: aErr } = await supabase
+            .from("alerts")
+            .select("student_id,severity,resolved_at")
+            .in("student_id", ids)
+            .is("resolved_at", null);
+          if (aErr) throw aErr;
 
-        const byStudent = new Map<string, { open: number; critical: number }>();
-        const alertRows = (alerts || []) as unknown as AlertRow[];
-        for (const a of alertRows) {
-          const sid = a.student_id;
-          const prev = byStudent.get(sid) || { open: 0, critical: 0 };
-          prev.open += 1;
-          if (a.severity === "critical") prev.critical += 1;
-          byStudent.set(sid, prev);
+          const byStudent = new Map<string, { open: number; critical: number }>();
+          const alertRows = (alerts || []) as unknown as AlertRow[];
+          for (const a of alertRows) {
+            const sid = a.student_id;
+            const prev = byStudent.get(sid) || { open: 0, critical: 0 };
+            prev.open += 1;
+            if (a.severity === "critical") prev.critical += 1;
+            byStudent.set(sid, prev);
+          }
+
+          roster = roster.map((s) => {
+            const c = byStudent.get(s.id);
+            return {
+              ...s,
+              openAlerts: c?.open ?? 0,
+              criticalAlerts: c?.critical ?? 0,
+            };
+          });
         }
-
-        roster = roster.map((s) => {
-          const c = byStudent.get(s.id);
-          return {
-            ...s,
-            openAlerts: c?.open ?? 0,
-            criticalAlerts: c?.critical ?? 0,
-          };
-        });
       }
 
       setStudents(roster);

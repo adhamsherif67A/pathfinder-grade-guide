@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { calculateGPA, GRADE_POINTS } from "@/lib/gpa";
+import { AUTH_DISABLED } from "@/lib/auth";
+import { DEV_STUDENTS, DEV_STUDENT_COURSES } from "@/lib/dev-data";
 
 export const Route = createFileRoute("/students/$studentId")({
   component: StudentProfilePage,
@@ -55,54 +57,84 @@ function StudentProfilePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data: s, error: sErr } = await supabase
-        .from("students")
-        .select("id,full_name,registration_number,program,level,enrollment_year,credits_earned")
-        .eq("id", studentId)
-        .single();
-      if (sErr) throw sErr;
+      if (AUTH_DISABLED) {
+        // Use dev data when auth is disabled
+        const devStudent = DEV_STUDENTS.find((s) => s.id === studentId);
+        if (!devStudent) {
+          throw new Error("Student not found in dev data");
+        }
 
-      const { data: c, error: cErr } = await supabase
-        .from("courses")
-        .select("course_code,course_name,letter_grade,credit_hours,term")
-        .eq("student_id", studentId);
-      if (cErr) throw cErr;
+        setStudent({
+          id: devStudent.id,
+          full_name: devStudent.full_name,
+          registration_number: devStudent.registration_number,
+          program: devStudent.program ?? null,
+          level: devStudent.level ?? null,
+          enrollment_year: undefined ?? null,
+          credits_earned: devStudent.credits_earned,
+        });
 
-      const { data: n, error: nErr } = await supabase
-        .from("student_notes")
-        .select("id,visibility,body,created_at,author_id")
-        .eq("student_id", studentId)
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (nErr) throw nErr;
+        const devCourses = DEV_STUDENT_COURSES.filter((sc) => sc.student_id === studentId);
+        setCourses(
+          devCourses.map((row) => ({
+            course_code: `CS${Math.floor(Math.random() * 900) + 100}`,
+            course_name: "Sample Course",
+            letter_grade: row.grade,
+            credit_hours: 3,
+            term: row.semester,
+          })),
+        );
+        setNotes([]);
+      } else {
+        const { data: s, error: sErr } = await supabase
+          .from("students")
+          .select("id,full_name,registration_number,program,level,enrollment_year,credits_earned")
+          .eq("id", studentId)
+          .single();
+        if (sErr) throw sErr;
 
-      setStudent({
-        id: s.id,
-        full_name: s.full_name,
-        registration_number: s.registration_number,
-        program: s.program ?? null,
-        level: s.level ?? null,
-        enrollment_year: s.enrollment_year ?? null,
-        credits_earned: Number(s.credits_earned ?? 0),
-      });
-      setCourses(
-        (c || []).map((row) => ({
-          course_code: row.course_code ?? null,
-          course_name: row.course_name ?? null,
-          letter_grade: row.letter_grade,
-          credit_hours: Number(row.credit_hours),
-          term: row.term ?? null,
-        })),
-      );
-      setNotes(
-        (n || []).map((row) => ({
-          id: row.id,
-          visibility: row.visibility as NoteRow["visibility"],
-          body: row.body,
-          created_at: row.created_at,
-          author_id: row.author_id,
-        })),
-      );
+        const { data: c, error: cErr } = await supabase
+          .from("courses")
+          .select("course_code,course_name,letter_grade,credit_hours,term")
+          .eq("student_id", studentId);
+        if (cErr) throw cErr;
+
+        const { data: n, error: nErr } = await supabase
+          .from("student_notes")
+          .select("id,visibility,body,created_at,author_id")
+          .eq("student_id", studentId)
+          .order("created_at", { ascending: false })
+          .limit(200);
+        if (nErr) throw nErr;
+
+        setStudent({
+          id: s.id,
+          full_name: s.full_name,
+          registration_number: s.registration_number,
+          program: s.program ?? null,
+          level: s.level ?? null,
+          enrollment_year: s.enrollment_year ?? null,
+          credits_earned: Number(s.credits_earned ?? 0),
+        });
+        setCourses(
+          (c || []).map((row) => ({
+            course_code: row.course_code ?? null,
+            course_name: row.course_name ?? null,
+            letter_grade: row.letter_grade,
+            credit_hours: Number(row.credit_hours),
+            term: row.term ?? null,
+          })),
+        );
+        setNotes(
+          (n || []).map((row) => ({
+            id: row.id,
+            visibility: row.visibility as NoteRow["visibility"],
+            body: row.body,
+            created_at: row.created_at,
+            author_id: row.author_id,
+          })),
+        );
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not load student profile");
     } finally {
