@@ -7,7 +7,8 @@ import {
   Info, 
   Plus,
   Trash2,
-  ArrowRightCircle
+  ArrowRightCircle,
+  RotateCcw
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,8 @@ function DegreePlannerPage() {
         if (data) {
           const codes = new Set(data.map(d => (d.course_code || "").trim().toUpperCase()).filter(Boolean));
           setCompletedCodes(codes);
+        } else {
+          setCompletedCodes(new Set());
         }
         
         const savedPlan = localStorage.getItem(`plan_${student.id}`);
@@ -90,6 +93,19 @@ function DegreePlannerPage() {
     return map;
   }, [violations]);
 
+  const nextSemesterToPlan = useMemo(() => {
+    const completedSems = new Set<string>();
+    completedCodes.forEach(code => {
+      const sem = CURRICULUM_BY_CODE[code]?.semester;
+      if (sem) completedSems.add(sem);
+    });
+
+    for (const sem of ["1", "2", "3", "4", "5", "6", "7", "8"]) {
+      if (!completedSems.has(sem)) return sem;
+    }
+    return "Conc. 1";
+  }, [completedCodes]);
+
   const addToPlan = (course_code: string, semester: string) => {
     const code = course_code.trim().toUpperCase();
     if (completedCodes.has(code)) {
@@ -101,14 +117,19 @@ function DegreePlannerPage() {
       return;
     }
     setPlannedCourses(prev => [...prev, { course_code: code, semester }]);
-    toast.success(`Added to Semester ${semester}`);
+    toast.success(`Added to Sem ${semester}`);
   };
 
   const removeFromPlan = (course_code: string) => {
     setPlannedCourses(prev => prev.filter(p => p.course_code !== course_code));
   };
 
-  if (loading) return <div className="text-center py-20 text-muted-foreground italic">Initializing Degree Planner...</div>;
+  const resetPlan = () => {
+    setPlannedCourses([]);
+    toast.success("Planner cleared");
+  };
+
+  if (loading) return <div className="text-center py-20 text-muted-foreground italic">Syncing with GPA Calculator...</div>;
 
   if (!student) {
     return (
@@ -128,7 +149,7 @@ function DegreePlannerPage() {
     );
   }
 
-  const plannerSemesters = ["5", "6", "7", "8", "Conc. 1", "Conc. 2"];
+  const plannerSemesters = ["1", "2", "3", "4", "5", "6", "7", "8", "Conc. 1", "Conc. 2"];
 
   return (
     <div className="space-y-6">
@@ -140,6 +161,9 @@ function DegreePlannerPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={resetPlan} className="text-muted-foreground hover:text-destructive">
+            <RotateCcw className="h-4 w-4 mr-1" /> Reset Plan
+          </Button>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             {completedCodes.size} Completed
           </Badge>
@@ -149,7 +173,7 @@ function DegreePlannerPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-[380px_1fr] gap-6">
         {/* Course Catalog */}
         <section className="glass-strong rounded-2xl p-6 h-[80vh] flex flex-col">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-primary">
@@ -157,38 +181,50 @@ function DegreePlannerPage() {
           </h2>
           <div className="overflow-y-auto space-y-2 pr-2">
             {CURRICULUM.filter(c => !completedCodes.has(c.code.toUpperCase()) && !plannedCourses.some(p => p.course_code === c.code.toUpperCase()))
-              .map(course => (
-                <div key={course.code} className="glass rounded-xl p-3 border border-white/5 hover:border-white/20 transition-all group">
-                  <div className="flex justify-between items-start">
-                    <div className="min-w-0">
-                      <div className="font-mono text-[10px] text-muted-foreground uppercase">{course.code}</div>
-                      <div className="font-semibold text-sm truncate">{course.name}</div>
+              .map(course => {
+                const isNextSem = course.semester === nextSemesterToPlan;
+                return (
+                  <div key={course.code} className={`glass rounded-xl p-3 border transition-all group ${isNextSem ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20' : 'border-white/5 hover:border-white/20'}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="font-mono text-[10px] text-muted-foreground uppercase">{course.code}</div>
+                          {isNextSem && <Badge className="text-[8px] h-3 px-1 uppercase bg-primary text-primary-foreground">Next Sem</Badge>}
+                        </div>
+                        <div className="font-semibold text-sm truncate">{course.name}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-3 grid grid-cols-3 gap-1">
-                    {plannerSemesters.map(sem => (
-                      <button
-                        key={sem}
-                        onClick={() => addToPlan(course.code, sem)}
-                        className="h-7 px-1 rounded bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-[9px] font-bold transition-colors truncate"
-                      >
-                        Sem {sem}
-                      </button>
-                    ))}
-                  </div>
-                  {course.prerequisite && (
-                    <div className="mt-2 text-[9px] text-muted-foreground italic flex items-center gap-1 opacity-60">
-                      <Info className="h-3 w-3 shrink-0" /> Prereq: {course.prerequisite}
+                    <div className="mt-3 overflow-x-auto pb-1">
+                      <div className="flex gap-1">
+                        {plannerSemesters.map(sem => (
+                          <button
+                            key={sem}
+                            onClick={() => addToPlan(course.code, sem)}
+                            className={`h-7 px-2 shrink-0 rounded text-[9px] font-bold transition-colors ${
+                              sem === course.semester 
+                                ? 'bg-primary/20 text-primary border border-primary/30' 
+                                : 'bg-white/5 text-muted-foreground hover:bg-primary hover:text-primary-foreground'
+                            }`}
+                          >
+                            S{sem}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {course.prerequisite && (
+                      <div className="mt-2 text-[9px] text-muted-foreground italic flex items-center gap-1 opacity-60">
+                        <Info className="h-3 w-3 shrink-0" /> Prereq: {course.prerequisite}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </section>
 
         {/* Planner Grid */}
-        <section className="lg:col-span-2 space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
+        <section className="space-y-4">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {plannerSemesters.map(semNum => (
               <SemesterCol 
                 key={semNum} 
@@ -196,6 +232,7 @@ function DegreePlannerPage() {
                 courses={plannedCourses.filter(p => p.semester === semNum)}
                 violationMap={violationMap}
                 onRemove={removeFromPlan}
+                isRecommended={semNum === nextSemesterToPlan}
               />
             ))}
           </div>
@@ -235,18 +272,21 @@ function SemesterCol({
   sem, 
   courses, 
   violationMap,
-  onRemove
+  onRemove,
+  isRecommended
 }: { 
   sem: string; 
   courses: PlannedCourse[]; 
   violationMap: Map<string, PrerequisiteViolation[]>;
   onRemove: (code: string) => void;
+  isRecommended?: boolean;
 }) {
   return (
-    <div className="glass-strong rounded-2xl p-5 flex flex-col h-full min-h-[200px]">
+    <div className={`glass-strong rounded-2xl p-5 flex flex-col h-full min-h-[180px] border transition-all duration-500 ${isRecommended ? 'border-primary/50 shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.1)] scale-[1.02] z-10' : 'border-white/5'}`}>
       <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
-        <h3 className="font-bold text-primary flex items-center gap-2">
+        <h3 className={`font-bold flex items-center gap-2 ${isRecommended ? 'text-primary' : 'text-foreground/80'}`}>
           <Calendar className="h-4 w-4" /> Sem {sem}
+          {isRecommended && <Badge className="text-[7px] h-3 px-1 bg-primary text-primary-foreground">Next</Badge>}
         </h3>
         <Badge variant="secondary" className="text-[10px]">
           {courses.reduce((acc, c) => acc + (CURRICULUM_BY_CODE[c.course_code.toUpperCase()]?.credits || 0), 0)} Cr
