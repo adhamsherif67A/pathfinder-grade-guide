@@ -62,11 +62,16 @@ function GpaCalculatorPage() {
   const [search, setSearch] = useState("");
   const [showUclanOnly, setShowUclanOnly] = useState(false);
 
-  const { student } = useAppContext();
+  const { student, loading: ctxLoading } = useAppContext();
   const studentId = student?.id;
 
   useEffect(() => {
-    if (!studentId) return;
+    if (ctxLoading) return;
+    if (!studentId) {
+      setRows([emptyRow()]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     supabase
