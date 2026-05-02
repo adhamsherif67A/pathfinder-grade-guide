@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Save, RotateCcw, Search, GraduationCap } from "lucide-react";
+import { Plus, Trash2, Save, RotateCcw, Search, GraduationCap, Target, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { getSemesterRecommendation } from "@/lib/recommendation";
 import { CURRICULUM, CURRICULUM_BY_CODE, SEMESTERS, type CurriculumCourse } from "@/lib/curriculum";
 import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateRequiredGrades } from "@/lib/gpa-projection";
 
 export const Route = createFileRoute("/gpa-calculator")({
   component: GpaCalculatorRoute,
@@ -69,6 +70,7 @@ function GpaCalculatorPage() {
   const [filterSem, setFilterSem] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [showUclanOnly, setShowUclanOnly] = useState(false);
+  const [targetGpa, setTargetGpa] = useState<number>(3.5);
 
   const { student, loading: ctxLoading } = useAppContext();
   const studentId = student?.id;
@@ -206,7 +208,7 @@ function GpaCalculatorPage() {
     }
   };
 
-  const { gpa, totalCredits } = calculateGPA(rows);
+  const { gpa, totalCredits, totalPoints } = calculateGPA(rows);
   const rec = getSemesterRecommendation(rows);
   const recToneClass =
     rec.tone === "good"
@@ -214,6 +216,10 @@ function GpaCalculatorPage() {
       : rec.tone === "ok"
         ? "text-sky-200 border-sky-400/30 bg-sky-400/10"
         : "text-amber-200 border-amber-400/30 bg-amber-400/10";
+
+  const totalCurriculumCredits = 144;
+  const remainingCredits = Math.max(0, totalCurriculumCredits - totalCredits);
+  const projection = calculateRequiredGrades(totalPoints, totalCredits, targetGpa, remainingCredits);
 
   return (
       <div className="space-y-6">
@@ -330,7 +336,7 @@ function GpaCalculatorPage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+        <div className="grid lg:grid-cols-[1fr_350px] gap-6">
           <section className="glass-strong rounded-2xl p-5">
             {loading ? (
               <div className="text-sm text-muted-foreground py-8 text-center">Loading...</div>
@@ -415,33 +421,89 @@ function GpaCalculatorPage() {
             )}
           </section>
 
-          <aside className="glass-strong rounded-2xl p-6 h-max sticky top-24">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Your GPA</div>
-            <div className="text-6xl font-bold text-gradient mt-1">{gpa.toFixed(2)}</div>
-            <div className="text-sm text-muted-foreground mt-1">
-              across {totalCredits} credit hours
-            </div>
-            <div className={`glass rounded-xl p-4 border mt-5 ${recToneClass}`}>
-              <div className="text-xs uppercase tracking-wider opacity-80">Next semester</div>
-              <div className="text-sm font-semibold mt-1">{rec.label}</div>
-              <div className="text-xs opacity-80 mt-1">Suggested: {rec.credits}</div>
-              <ul className="mt-3 space-y-1 text-[11px] opacity-90">
-                {rec.reasons.slice(0, 2).map((r, idx) => (
-                  <li key={idx}>• {r}</li>
-                ))}
-              </ul>
+          <aside className="space-y-6 sticky top-24 h-max">
+            <div className="glass-strong rounded-2xl p-6">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">Current GPA</div>
+              <div className="text-6xl font-bold text-gradient mt-1">{gpa.toFixed(2)}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                across {totalCredits} credit hours
+              </div>
+              <div className={`glass rounded-xl p-4 border mt-5 ${recToneClass}`}>
+                <div className="text-xs uppercase tracking-wider opacity-80">Next semester</div>
+                <div className="text-sm font-semibold mt-1">{rec.label}</div>
+                <div className="text-xs opacity-80 mt-1">Suggested: {rec.credits}</div>
+                <ul className="mt-3 space-y-1 text-[11px] opacity-90">
+                  {rec.reasons.slice(0, 2).map((r, idx) => (
+                    <li key={idx}>• {r}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
-            <div className="mt-5 pt-5 border-t border-white/10 text-xs text-muted-foreground space-y-2">
-              <div>Formula:</div>
-              <div className="font-mono text-foreground/90">Σ(points × credits) / Σ(credits)</div>
-              <div className="pt-3 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#FFC000]" />
-                <span>UCLAN courses (delivered with University of Central Lancashire, UK)</span>
+            <div className="glass-strong rounded-2xl p-6 border border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold italic">What-If Projection</h3>
               </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">
+                    Target Cumulative GPA
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <Input 
+                      type="number" 
+                      min={1} 
+                      max={4} 
+                      step={0.01} 
+                      value={targetGpa}
+                      onChange={(e) => setTargetGpa(Number(e.target.value))}
+                      className="bg-white/10 border-white/20 h-10 text-lg font-bold"
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Remaining: <span className="text-foreground font-mono">{remainingCredits}</span> cr
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`glass rounded-xl p-4 border ${projection.isPossible ? 'border-primary/30 bg-primary/10' : 'border-destructive/30 bg-destructive/10'}`}>
+                  <div className="flex gap-3">
+                    {projection.isPossible ? (
+                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
+                    )}
+                    <div>
+                      <div className="text-sm font-semibold leading-tight mb-1">
+                        {projection.isPossible ? 'Target Reachable' : 'Target Out of Reach'}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-normal">
+                        {projection.message}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {projection.isPossible && (
+                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-tight">Required Average</div>
+                      <div className="text-xl font-black text-primary">{projection.requiredAveragePoints.toFixed(2)}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-strong rounded-2xl p-4 text-[10px] text-muted-foreground space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#FFC000]" />
+                <span>UCLAN courses (University of Central Lancashire, UK)</span>
+              </div>
+              <p>Projection assumes you complete the full 144-credit Mechatronics program.</p>
             </div>
           </aside>
         </div>
       </div>
   );
 }
+
