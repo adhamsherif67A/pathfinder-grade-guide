@@ -90,21 +90,6 @@ function AdvisorRosterPage() {
             criticalAlerts: c?.critical ?? 0,
           };
         });
-      } else if (role === "admin") {
-        const { data, error } = await supabase
-          .from("students")
-          .select("id,full_name,registration_number,program,level,credits_earned")
-          .order("full_name", { ascending: true })
-          .limit(500);
-        if (error) throw error;
-        roster = (data || []).map((s) => ({
-          id: s.id,
-          full_name: s.full_name,
-          registration_number: s.registration_number,
-          program: (s as { program?: string | null }).program ?? null,
-          level: (s as { level?: string | null }).level ?? null,
-          credits_earned: Number((s as { credits_earned?: number | null }).credits_earned ?? 0),
-        }));
       } else {
         const { data, error } = await supabase
           .from("advisor_students")

@@ -83,7 +83,9 @@ export function AppShell({
       }
 
       // Default landing based on role
-      if (path === "/dashboard" && p.role !== "student") {
+      if (path === "/dashboard" && p.role === "advisor") {
+        navigate({ to: "/advisor" });
+      } else if (path === "/advisor" && p.role === "student") {
         navigate({ to: "/dashboard" });
       }
     } finally {
