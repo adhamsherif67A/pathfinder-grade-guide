@@ -44,9 +44,19 @@ function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    if (role === 'advisor') {
+      const isValidAdvisorId = /^eng\d+$/i.test(reg.trim());
+      if (!isValidAdvisorId) {
+        toast.error("Advisor ID must start with 'eng' followed by numbers (e.g. eng1234)");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       await signInDirectly({
-        email,
+        email: role === 'advisor' ? `${reg.trim().toLowerCase()}@advisor.aast.edu` : email,
         registration_number: reg,
         full_name: name,
         role,
@@ -94,27 +104,29 @@ function LoginPage() {
           </Tabs>
 
           <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">College Email</Label>
-              <Input
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === 'student' ? "e.g. name@student.aast.edu" : "e.g. name@aast.edu.eg"}
-                required
-                className="bg-white/5 border-white/15"
-                autoComplete="email"
-              />
-            </div>
+            {role === 'student' && (
+              <div className="space-y-2">
+                <Label htmlFor="email">College Email</Label>
+                <Input
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="e.g. name@student.aast.edu"
+                  required={role === 'student'}
+                  className="bg-white/5 border-white/15"
+                  autoComplete="email"
+                />
+              </div>
+            )}
 
             <div className={`grid ${role === 'student' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
               <div className="space-y-2">
-                <Label htmlFor="reg">{role === 'student' ? 'Registration #' : 'Staff ID'}</Label>
+                <Label htmlFor="reg">{role === 'student' ? 'Registration #' : 'Advisor ID (engXXXX)'}</Label>
                 <Input
                   id="reg"
                   value={reg}
                   onChange={(e) => setReg(e.target.value)}
-                  placeholder={role === 'student' ? "e.g. 22102345" : "e.g. AD-9901"}
+                  placeholder={role === 'student' ? "e.g. 22102345" : "e.g. eng1234"}
                   required
                   className="bg-white/5 border-white/15"
                   autoComplete="username"
@@ -141,7 +153,7 @@ function LoginPage() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
+                placeholder={role === 'student' ? "e.g. Ahmed Hassan" : "e.g. Dr. Ahmed Hassan"}
                 required
                 className="bg-white/5 border-white/15"
                 autoComplete="name"
@@ -161,5 +173,4 @@ function LoginPage() {
     </AppShell>
   );
 }
-
 

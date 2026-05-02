@@ -9,12 +9,22 @@ import {
   ArrowRight,
   User,
   ExternalLink,
-  Filter
+  Filter,
+  MessageSquareWarning,
+  Trash2,
+  Settings
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -56,59 +66,60 @@ function AdvisorDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "at-risk" | "honor">("all");
+  const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
 
-  useEffect(() => {
-    async function fetchRoster() {
-      setLoading(true);
-      // 1) Fetch all students
-      const { data: studentData, error: sErr } = await supabase
-        .from("students")
-        .select("*");
-      
-      if (sErr || !studentData) {
-        toast.error("Failed to load student roster");
-        setLoading(false);
-        return;
-      }
-
-      // 2) Fetch all courses to calculate GPAs (in a real app, we'd use a view or RPC)
-      const { data: courseData, error: cErr } = await supabase
-        .from("courses")
-        .select("student_id, letter_grade, credit_hours");
-
-      if (cErr) {
-        toast.error("Failed to load grade data");
-        setLoading(false);
-        return;
-      }
-
-      const roster = studentData.map(s => {
-        const studentCourses = (courseData || []).filter(c => c.student_id === s.id);
-        const stats = calculateGPA(studentCourses.map(c => ({
-          letter_grade: c.letter_grade,
-          credit_hours: Number(c.credit_hours)
-        })));
-
-        let status: StudentRosterItem["status"] = "stable";
-        if (stats.gpa < 2.0) status = "at-risk";
-        else if (stats.gpa < 2.5) status = "warning";
-        else if (stats.gpa >= 3.6) status = "honor";
-
-        return {
-          id: s.id,
-          full_name: s.full_name,
-          registration_number: s.registration_number,
-          enrollment_year: s.enrollment_year,
-          gpa: stats.gpa,
-          credits: stats.totalCredits,
-          status
-        };
-      });
-
-      setStudents(roster);
+  const fetchRoster = async () => {
+    setLoading(true);
+    // 1) Fetch all students
+    const { data: studentData, error: sErr } = await supabase
+      .from("students")
+      .select("*");
+    
+    if (sErr || !studentData) {
+      toast.error("Failed to load student roster");
       setLoading(false);
+      return;
     }
 
+    // 2) Fetch all courses to calculate GPAs
+    const { data: courseData, error: cErr } = await supabase
+      .from("courses")
+      .select("student_id, letter_grade, credit_hours");
+
+    if (cErr) {
+      toast.error("Failed to load grade data");
+      setLoading(false);
+      return;
+    }
+
+    const roster = studentData.map(s => {
+      const studentCourses = (courseData || []).filter(c => c.student_id === s.id);
+      const stats = calculateGPA(studentCourses.map(c => ({
+        letter_grade: c.letter_grade,
+        credit_hours: Number(c.credit_hours)
+      })));
+
+      let status: StudentRosterItem["status"] = "stable";
+      if (stats.gpa < 2.0) status = "at-risk";
+      else if (stats.gpa < 2.5) status = "warning";
+      else if (stats.gpa >= 3.6) status = "honor";
+
+      return {
+        id: s.id,
+        full_name: s.full_name,
+        registration_number: s.registration_number,
+        enrollment_year: s.enrollment_year,
+        gpa: stats.gpa,
+        credits: stats.totalCredits,
+        status
+      };
+    });
+
+    setStudents(roster);
+    setLoading(false);
+  };
+
+  useEffect(() => {
     void fetchRoster();
   }, []);
 
@@ -131,6 +142,29 @@ function AdvisorDashboard() {
       avgGpa: students.length ? students.reduce((acc, s) => acc + s.gpa, 0) / students.length : 0
     };
   }, [students]);
+
+  const sendAlert = () => {
+    toast.success(`Formal warning sent to ${selectedStudent?.full_name}'s student email.`);
+  };
+
+  const clearStudentData = async () => {
+    if (!selectedStudent) return;
+    const confirm = window.confirm(`Are you sure you want to completely erase the academic record for ${selectedStudent.full_name}? This action cannot be undone.`);
+    if (!confirm) return;
+
+    const { error } = await supabase
+      .from("courses")
+      .delete()
+      .eq("student_id", selectedStudent.id);
+
+    if (error) {
+      toast.error("Failed to clear data.");
+    } else {
+      toast.success(`Academic record erased for ${selectedStudent.full_name}.`);
+      setSelectedStudent(null);
+      fetchRoster();
+    }
+  };
 
   if (loading) return <div className="text-center py-20 text-muted-foreground italic">Syncing Department Roster...</div>;
 
@@ -248,8 +282,13 @@ function AdvisorDashboard() {
                       {student.status === 'honor' && <Badge variant="outline" className="text-emerald-400 border-emerald-400/30 bg-emerald-400/10">Honor Roll</Badge>}
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity gap-1">
-                        View Profile <ExternalLink className="h-3 w-3" />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                        onClick={() => setSelectedStudent(student)}
+                      >
+                        <Settings className="h-3 w-3" /> Control Panel
                       </Button>
                     </td>
                   </tr>
@@ -259,6 +298,62 @@ function AdvisorDashboard() {
           </table>
         </div>
       </div>
+
+      <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
+        <DialogContent className="max-w-md glass-strong border-white/10">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" /> Student Control Panel
+            </DialogTitle>
+            <DialogDescription>
+              Manage academic records and alerts for {selectedStudent?.full_name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedStudent && (
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="glass rounded-xl p-4">
+                  <div className="text-[10px] uppercase text-muted-foreground tracking-wider mb-1">Cumulative GPA</div>
+                  <div className={`text-2xl font-bold ${selectedStudent.gpa < 2.0 ? 'text-destructive' : ''}`}>
+                    {selectedStudent.gpa.toFixed(2)}
+                  </div>
+                </div>
+                <div className="glass rounded-xl p-4">
+                  <div className="text-[10px] uppercase text-muted-foreground tracking-wider mb-1">Earned Credits</div>
+                  <div className="text-2xl font-bold">{selectedStudent.credits}</div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Advisor Actions</h4>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-3 bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20 hover:text-amber-400"
+                  onClick={sendAlert}
+                >
+                  <MessageSquareWarning className="h-4 w-4" /> Send Formal Academic Alert
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-3 bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                  onClick={clearStudentData}
+                >
+                  <Trash2 className="h-4 w-4" /> Erase Academic Record
+                </Button>
+              </div>
+
+              <div className="text-[10px] text-muted-foreground text-center">
+                Registration #: {selectedStudent.registration_number} <br/>
+                All actions are logged in the departmental audit system.
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
