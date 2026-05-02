@@ -81,6 +81,7 @@ function GpaCalculatorPage() {
       return;
     }
 
+    let active = true;
     setLoading(true);
     supabase
       .from("courses")
@@ -88,6 +89,7 @@ function GpaCalculatorPage() {
       .eq("student_id", studentId)
       .order("created_at", { ascending: true })
       .then(({ data, error }) => {
+        if (!active) return;
         if (error) {
           toast.error("Could not load courses");
           setRows([emptyRow()]);
@@ -114,7 +116,17 @@ function GpaCalculatorPage() {
           setRows([emptyRow()]);
         }
         setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        toast.error("Could not load courses");
+        setRows([emptyRow()]);
+        setLoading(false);
       });
+
+    return () => {
+      active = false;
+    };
   }, [studentId, ctxLoading]);
 
   const enrolledCodes = useMemo(
