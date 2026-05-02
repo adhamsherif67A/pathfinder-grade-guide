@@ -1,12 +1,9 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Calendar,
   Calculator,
   LayoutDashboard,
   LogOut,
-  MessageSquare,
-  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,7 +13,6 @@ import aastLogo from "@/assets/aast-logo.png";
 import engLogo from "@/assets/eng-logo.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ensureStudentLinked,
   getAppProfile,
   getAuthUser,
   getStudentById,
@@ -67,15 +63,7 @@ export function AppShell({
       setProfile(p);
       setStudent(p.student_id ? await getStudentById(p.student_id) : null);
 
-      // Default landing based on role
-      // If a student tries to access /advisor, redirect to /dashboard
-      if (path === "/advisor" && p.role === "student") {
-        navigate({ to: "/dashboard" });
-      }
-      // If an advisor tries to access /dashboard, redirect to /advisor
-      else if (path === "/dashboard" && p.role === "advisor") {
-        navigate({ to: "/advisor" });
-      }
+      // Single dashboard — no role-based redirects
     } finally {
       setLoading(false);
     }
@@ -166,7 +154,7 @@ export function AppShell({
             <div className="mx-auto max-w-7xl px-4 py-3 mt-2 mr-44 sm:mr-48">
               <div className="glass-strong rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3">
                 <Link
-                  to={role === "student" ? "/dashboard" : "/advisor"}
+                  to="/dashboard"
                   className="flex items-center gap-3 min-w-0"
                 >
                   <img
@@ -185,28 +173,14 @@ export function AppShell({
                 </Link>
 
                 <nav className="flex items-center gap-1">
-                  {/* Student-only navigation */}
                   {navItem("/dashboard", "Dashboard", LayoutDashboard)}
-                  {navItem("/gpa-calculator", "GPA", Calculator)}
-                  {navItem("/audit", "Audit", Shield)}
-                  {navItem("/planning", "Plan", Calendar)}
-                  {navItem("/messages", "Messages", MessageSquare)}
-                  {navItem("/appointments", "Appointments", Calendar)}
-                  <Link
-                    to="/settings"
-                    className={`ml-1 flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-all ${
-                      path === "/settings"
-                        ? "bg-primary/20 text-primary border border-primary/30"
-                        : "text-foreground/80 hover:text-foreground hover:bg-white/5"
-                    }`}
-                    title="Profile & Settings"
-                  >
+                  {navItem("/gpa-calculator", "GPA Calculator", Calculator)}
+                  <div className="ml-1 flex items-center gap-2 px-2 py-2 text-sm" title="Profile">
                     <Avatar className="h-7 w-7">
                       <AvatarImage alt={student?.full_name || profile?.full_name || "User"} />
                       <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden lg:inline">Profile</span>
-                  </Link>
+                  </div>
 
                   <Button
                     variant="ghost"

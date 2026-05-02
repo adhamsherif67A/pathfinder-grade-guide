@@ -26,7 +26,15 @@ export type AppContextValue = {
   refresh: () => Promise<void>;
 };
 
-const AppContext = createContext<AppContextValue | null>(null);
+const defaultValue: AppContextValue = {
+  loading: true,
+  profile: null,
+  student: null,
+  role: null,
+  refresh: async () => {},
+};
+
+const AppContext = createContext<AppContextValue>(defaultValue);
 
 export function AppContextProvider({
   value,
@@ -39,7 +47,5 @@ export function AppContextProvider({
 }
 
 export function useAppContext() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useAppContext must be used within AppContextProvider");
-  return ctx;
+  return useContext(AppContext);
 }
