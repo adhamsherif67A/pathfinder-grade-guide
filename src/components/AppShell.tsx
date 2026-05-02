@@ -67,15 +67,7 @@ export function AppShell({
       setProfile(p);
       setStudent(p.student_id ? await getStudentById(p.student_id) : null);
 
-      // Default landing based on role
-      // If a student tries to access /advisor, redirect to /dashboard
-      if (path === "/advisor" && p.role === "student") {
-        navigate({ to: "/dashboard" });
-      }
-      // If an advisor tries to access /dashboard, redirect to /advisor
-      else if (path === "/dashboard" && p.role === "advisor") {
-        navigate({ to: "/advisor" });
-      }
+      // Single dashboard — no role-based redirects
     } finally {
       setLoading(false);
     }
