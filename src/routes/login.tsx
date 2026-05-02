@@ -32,7 +32,12 @@ function LoginPage() {
       if (!user) return;
       const profile = await getAppProfile(user.id);
       if (!profile) return;
-      navigate({ to: "/dashboard" });
+      
+      if (profile.role === 'advisor') {
+        navigate({ to: "/advisor" });
+      } else {
+        navigate({ to: "/dashboard" });
+      }
     })();
   }, [navigate]);
 
@@ -48,7 +53,12 @@ function LoginPage() {
         enrollment_year: enrollmentYear === "" ? undefined : Number(enrollmentYear),
       });
       toast.success(`Welcome back, ${role}!`);
-      navigate({ to: "/dashboard" });
+      
+      if (role === 'advisor') {
+        navigate({ to: "/advisor" });
+      } else {
+        navigate({ to: "/dashboard" });
+      }
     } catch (err) {
       console.error("[Login] Sign in process failed:", err);
       const msg = err instanceof Error ? err.message : "Sign in failed. Check your internet or ID.";
