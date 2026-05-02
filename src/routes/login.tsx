@@ -50,7 +50,9 @@ function LoginPage() {
       toast.success("Welcome to EduPath!");
       navigate({ to: "/dashboard" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign in failed");
+      console.error("[Login] Sign in process failed:", err);
+      const msg = err instanceof Error ? err.message : "Sign in failed. Check your internet or registration number.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

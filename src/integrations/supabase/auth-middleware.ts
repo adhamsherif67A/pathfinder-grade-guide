@@ -10,26 +10,27 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 
     // If DISABLE_AUTH is enabled or Supabase env vars are missing, bypass server-side checks and run in dev mode.
-    if (process.env.DISABLE_AUTH === "true" || !SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-      const missing = [
-        ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
-        ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
-      ];
-      if (!process.env.DISABLE_AUTH) {
-        const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Continuing in auth-bypass dev mode.`;
-        console.warn(`[Supabase] ${message}`);
-      }
+        if (process.env.DISABLE_AUTH === "true" || !SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+          const missing = [
+            ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
+            ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
+          ];
+          if (!process.env.DISABLE_AUTH) {
+            const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Continuing in auth-bypass dev mode.`;
+            console.warn(`[Supabase] ${message}`);
+          }
 
-      return next({
-        context: {
-          supabase: undefined as any,
-          userId: "dev-user",
-          claims: {},
-        },
-      });
-    }
+          return next({
+            context: {
+              supabase: undefined as any, // Mock client for auth-disabled environments
+              userId: "dev-user", // Mock user ID
+              claims: {}, // Empty claims, as we are bypassing auth
+            },
+          });
+        }
 
-    const request = getRequest();
+        // Proceed with token validation only if Supabase is configured and auth is not explicitly disabled
+        const request = getRequest();
 
     if (!request?.headers) {
       throw new Response("Unauthorized: No request headers available", { status: 401 });

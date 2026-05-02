@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AppProfile, AppRole, AppStudent } from "@/lib/app-context";
 
 // We are bypassing Supabase Auth as requested.
-export const AUTH_DISABLED = false; 
+export const AUTH_DISABLED = true; 
 
 const SESSION_KEY = "edupath_session_v2";
 
@@ -59,20 +59,35 @@ export async function signInDirectly(args: {
 
   if (!reg || !name) throw new Error("Registration number and name are required.");
 
-  // 1) Upsert student record
-  const { data: student, error: sErr } = await supabase
-    .from("students")
-    .upsert({
-      registration_number: reg,
-      full_name: name,
-      program: args.program?.trim() || undefined,
-      level: args.level?.trim() || undefined,
-      enrollment_year: args.enrollment_year || undefined,
-    }, { onConflict: 'registration_number' })
-    .select("id, role:full_name") // We'll assume student for now
-    .single();
+  console.log("[Auth] Attempting direct sign in for:", reg);
 
-  if (sErr) throw sErr;
+  // 1) Upsert student record
+  const { data, error: sErr } = await supabase
+    .from("students")
+    .upsert(
+      {
+        registration_number: reg,
+        full_name: name,
+        program: args.program?.trim() || undefined,
+        level: args.level?.trim() || undefined,
+        enrollment_year: args.enrollment_year || undefined,
+      },
+      { onConflict: "registration_number" },
+    )
+    .select("id")
+    .maybeSingle();
+
+  if (sErr) {
+    console.error("[Auth] Database error during sign in:", sErr);
+    throw new Error(sErr.message || "Failed to save student record to database.");
+  }
+
+  if (!data) {
+    console.error("[Auth] No data returned from upsert");
+    throw new Error("Could not create or find your student record.");
+  }
+
+  console.log("[Auth] Successfully upserted student:", data.id);
 
   // 2) Set local session
   setSession({
