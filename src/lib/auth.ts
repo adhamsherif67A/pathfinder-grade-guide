@@ -50,47 +50,56 @@ export async function signInDirectly(args: {
   email: string;
   registration_number: string;
   full_name: string;
+  role?: AppRole;
   enrollment_year?: number;
 }) {
   const reg = args.registration_number.trim();
   const name = args.full_name.trim();
+  const role = args.role || "student";
 
-  if (!reg || !name) throw new Error("Registration number and name are required.");
+  if (!reg || !name) throw new Error("ID/Registration number and name are required.");
 
-  console.log("[Auth] Attempting direct sign in for:", reg);
+  console.log("[Auth] Attempting direct sign in for:", reg, "as", role);
 
-  // 1) Upsert student record
-  const { data, error: sErr } = await supabase
-    .from("students")
-    .upsert(
-      {
-        registration_number: reg,
-        full_name: name,
-        enrollment_year: args.enrollment_year || undefined,
-      },
-      { onConflict: "registration_number" },
-    )
-    .select("id")
-    .maybeSingle();
+  if (role === "student") {
+    // 1) Upsert student record
+    const { data, error: sErr } = await supabase
+      .from("students")
+      .upsert(
+        {
+          registration_number: reg,
+          full_name: name,
+          enrollment_year: args.enrollment_year || undefined,
+        },
+        { onConflict: "registration_number" },
+      )
+      .select("id")
+      .maybeSingle();
 
-  if (sErr) {
-    console.error("[Auth] Database error during sign in:", sErr);
-    throw new Error(sErr.message || "Failed to save student record to database.");
+    if (sErr) {
+      console.error("[Auth] Database error during sign in:", sErr);
+      throw new Error(sErr.message || "Failed to save student record to database.");
+    }
+
+    if (!data) {
+      console.error("[Auth] No data returned from upsert");
+      throw new Error("Could not create or find your student record.");
+    }
+    
+    // 2) Set local session
+    setSession({
+      registration_number: reg,
+      full_name: name,
+      role: "student",
+    });
+  } else {
+    // Advisor logic (simplified for direct sign-in)
+    setSession({
+      registration_number: reg,
+      full_name: name,
+      role: "advisor",
+    });
   }
-
-  if (!data) {
-    console.error("[Auth] No data returned from upsert");
-    throw new Error("Could not create or find your student record.");
-  }
-
-  console.log("[Auth] Successfully upserted student:", data.id);
-
-  // 2) Set local session
-  setSession({
-    registration_number: reg,
-    full_name: name,
-    role: "student",
-  });
 }
 
 export async function signOut() {

@@ -1,13 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LogIn } from "lucide-react";
+import { LogIn, UserCircle, GraduationCap } from "lucide-react";
 import edupathLogo from "@/assets/edupath-logo.png";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppShell } from "@/components/AppShell";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAppProfile, getAuthUser, signInDirectly } from "@/lib/auth";
+import { AppRole } from "@/lib/app-context";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -20,6 +22,7 @@ function LoginPage() {
   const [reg, setReg] = useState("");
   const [name, setName] = useState("");
   const [enrollmentYear, setEnrollmentYear] = useState<number | "">("");
+  const [role, setRole] = useState<AppRole>("student");
 
   const [loading, setLoading] = useState(false);
 
@@ -41,13 +44,14 @@ function LoginPage() {
         email,
         registration_number: reg,
         full_name: name,
+        role,
         enrollment_year: enrollmentYear === "" ? undefined : Number(enrollmentYear),
       });
-      toast.success("Welcome to EduPath!");
+      toast.success(`Welcome back, ${role}!`);
       navigate({ to: "/dashboard" });
     } catch (err) {
       console.error("[Login] Sign in process failed:", err);
-      const msg = err instanceof Error ? err.message : "Sign in failed. Check your internet or registration number.";
+      const msg = err instanceof Error ? err.message : "Sign in failed. Check your internet or ID.";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -64,9 +68,20 @@ function LoginPage() {
             </div>
             <h1 className="text-2xl font-bold text-gradient">EduPath Analytics</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Enter your student details to continue.
+              Academic Advising Portal
             </p>
           </div>
+
+          <Tabs defaultValue="student" onValueChange={(v) => setRole(v as AppRole)} className="mb-6">
+            <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10">
+              <TabsTrigger value="student" className="gap-2">
+                <GraduationCap className="h-4 w-4" /> Student
+              </TabsTrigger>
+              <TabsTrigger value="advisor" className="gap-2">
+                <UserCircle className="h-4 w-4" /> Advisor
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
@@ -75,37 +90,39 @@ function LoginPage() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. name@student.aast.edu"
+                placeholder={role === 'student' ? "e.g. name@student.aast.edu" : "e.g. name@aast.edu.eg"}
                 required
                 className="bg-white/5 border-white/15"
                 autoComplete="email"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid ${role === 'student' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
               <div className="space-y-2">
-                <Label htmlFor="reg">Registration #</Label>
+                <Label htmlFor="reg">{role === 'student' ? 'Registration #' : 'Staff ID'}</Label>
                 <Input
                   id="reg"
                   value={reg}
                   onChange={(e) => setReg(e.target.value)}
-                  placeholder="e.g. 22102345"
+                  placeholder={role === 'student' ? "e.g. 22102345" : "e.g. AD-9901"}
                   required
                   className="bg-white/5 border-white/15"
                   autoComplete="username"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="year">Enrollment year</Label>
-                <Input
-                  id="year"
-                  type="number"
-                  value={enrollmentYear}
-                  onChange={(e) => setEnrollmentYear(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="e.g. 2023"
-                  className="bg-white/5 border-white/15"
-                />
-              </div>
+              {role === 'student' && (
+                <div className="space-y-2">
+                  <Label htmlFor="year">Enrollment year</Label>
+                  <Input
+                    id="year"
+                    type="number"
+                    value={enrollmentYear}
+                    onChange={(e) => setEnrollmentYear(e.target.value ? Number(e.target.value) : "")}
+                    placeholder="e.g. 2023"
+                    className="bg-white/5 border-white/15"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -114,7 +131,7 @@ function LoginPage() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Ahmed Hassan"
+                placeholder="Enter your full name"
                 required
                 className="bg-white/5 border-white/15"
                 autoComplete="name"
@@ -123,19 +140,16 @@ function LoginPage() {
 
             <Button type="submit" disabled={loading} className="w-full" size="lg">
               <LogIn className="h-4 w-4 mr-1" />
-              {loading ? "Signing in..." : "Sign in directly"}
+              {loading ? "Signing in..." : `Sign in as ${role}`}
             </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              Verification is disabled. You’ll be logged in immediately.
+            <p className="text-xs text-center text-muted-foreground mt-4">
+              Access as <strong>{role}</strong> mode. Verification bypassed.
             </p>
           </form>
-
-          <div className="mt-6 text-[11px] text-muted-foreground">
-            Your data is stored in our database based on your registration number.
-          </div>
         </div>
       </div>
     </AppShell>
   );
 }
+
 

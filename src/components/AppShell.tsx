@@ -4,6 +4,8 @@ import {
   Calculator,
   LayoutDashboard,
   LogOut,
+  Map,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -59,11 +61,8 @@ export function AppShell({
         return;
       }
 
-      // Student onboarding/linking
       setProfile(p);
       setStudent(p.student_id ? await getStudentById(p.student_id) : null);
-
-      // Single dashboard — no role-based redirects
     } finally {
       setLoading(false);
     }
@@ -77,7 +76,6 @@ export function AppShell({
     return () => {
       data.subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requireAuth]);
 
   const logout = async () => {
@@ -116,13 +114,12 @@ export function AppShell({
     role === "student"
       ? `${student?.full_name || "Student"}${student?.registration_number ? ` · ${student.registration_number}` : ""}`
       : role === "advisor"
-        ? "Advisor"
+        ? `Advisor: ${profile?.full_name || "Academic Staff"}`
         : "";
 
   return (
     <AppContextProvider value={{ loading, profile, student, role, refresh }}>
       <div className="relative min-h-screen w-full overflow-x-hidden">
-        {/* Background image with overlay */}
         <div
           className="fixed inset-0 -z-20 bg-center bg-cover"
           style={{ backgroundImage: `url(${campusBg})`, opacity: 0.55 }}
@@ -134,7 +131,6 @@ export function AppShell({
           aria-hidden
         />
 
-        {/* Logos top right */}
         <div className="fixed top-3 right-3 z-30 flex items-center gap-2 glass rounded-2xl px-3 py-2">
           <img
             src={engLogo}
@@ -148,7 +144,6 @@ export function AppShell({
           />
         </div>
 
-        {/* Header */}
         {showHeader && (
           <header className="sticky top-0 z-20 w-full">
             <div className="mx-auto max-w-7xl px-4 py-3 mt-2 mr-44 sm:mr-48">
@@ -173,12 +168,15 @@ export function AppShell({
                 </Link>
 
                 <nav className="flex items-center gap-1">
+                  {role === 'advisor' && navItem("/advisor", "Students", Users)}
                   {navItem("/dashboard", "Dashboard", LayoutDashboard)}
-                  {navItem("/gpa-calculator", "GPA Calculator", Calculator)}
+                  {navItem("/degree-planner", "Planner", Map)}
+                  {navItem("/gpa-calculator", "Calculator", Calculator)}
+                  
                   <div className="ml-1 flex items-center gap-2 px-2 py-2 text-sm" title="Profile">
-                    <Avatar className="h-7 w-7">
+                    <Avatar className="h-7 w-7 border border-white/20">
                       <AvatarImage alt={student?.full_name || profile?.full_name || "User"} />
-                      <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                      <AvatarFallback className="text-[10px] bg-primary/20 text-primary">{initials}</AvatarFallback>
                     </Avatar>
                   </div>
 
@@ -202,3 +200,4 @@ export function AppShell({
     </AppContextProvider>
   );
 }
+
