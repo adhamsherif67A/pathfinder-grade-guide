@@ -9,40 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ReportRouteImport } from './routes/report'
-import { Route as PlanningRouteImport } from './routes/planning'
-import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GpaCalculatorRouteImport } from './routes/gpa-calculator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as AuditRouteImport } from './routes/audit'
-import { Route as AppointmentsRouteImport } from './routes/appointments'
-import { Route as AdvisorRouteImport } from './routes/advisor'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as StudentsStudentIdRouteImport } from './routes/students.$studentId'
-import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportRoute = ReportRouteImport.update({
-  id: '/report',
-  path: '/report',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlanningRoute = PlanningRouteImport.update({
-  id: '/planning',
-  path: '/planning',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -58,177 +29,48 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuditRoute = AuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppointmentsRoute = AppointmentsRouteImport.update({
-  id: '/appointments',
-  path: '/appointments',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdvisorRoute = AdvisorRouteImport.update({
-  id: '/advisor',
-  path: '/advisor',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StudentsStudentIdRoute = StudentsStudentIdRouteImport.update({
-  id: '/students/$studentId',
-  path: '/students/$studentId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/advisor': typeof AdvisorRoute
-  '/appointments': typeof AppointmentsRoute
-  '/audit': typeof AuditRoute
   '/dashboard': typeof DashboardRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
-  '/messages': typeof MessagesRoute
-  '/planning': typeof PlanningRoute
-  '/report': typeof ReportRoute
-  '/settings': typeof SettingsRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/students/$studentId': typeof StudentsStudentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/advisor': typeof AdvisorRoute
-  '/appointments': typeof AppointmentsRoute
-  '/audit': typeof AuditRoute
   '/dashboard': typeof DashboardRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
-  '/messages': typeof MessagesRoute
-  '/planning': typeof PlanningRoute
-  '/report': typeof ReportRoute
-  '/settings': typeof SettingsRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/students/$studentId': typeof StudentsStudentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/advisor': typeof AdvisorRoute
-  '/appointments': typeof AppointmentsRoute
-  '/audit': typeof AuditRoute
   '/dashboard': typeof DashboardRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
-  '/messages': typeof MessagesRoute
-  '/planning': typeof PlanningRoute
-  '/report': typeof ReportRoute
-  '/settings': typeof SettingsRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/students/$studentId': typeof StudentsStudentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/advisor'
-    | '/appointments'
-    | '/audit'
-    | '/dashboard'
-    | '/gpa-calculator'
-    | '/login'
-    | '/messages'
-    | '/planning'
-    | '/report'
-    | '/settings'
-    | '/auth/callback'
-    | '/students/$studentId'
+  fullPaths: '/' | '/dashboard' | '/gpa-calculator' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/advisor'
-    | '/appointments'
-    | '/audit'
-    | '/dashboard'
-    | '/gpa-calculator'
-    | '/login'
-    | '/messages'
-    | '/planning'
-    | '/report'
-    | '/settings'
-    | '/auth/callback'
-    | '/students/$studentId'
-  id:
-    | '__root__'
-    | '/'
-    | '/advisor'
-    | '/appointments'
-    | '/audit'
-    | '/dashboard'
-    | '/gpa-calculator'
-    | '/login'
-    | '/messages'
-    | '/planning'
-    | '/report'
-    | '/settings'
-    | '/auth/callback'
-    | '/students/$studentId'
+  to: '/' | '/dashboard' | '/gpa-calculator' | '/login'
+  id: '__root__' | '/' | '/dashboard' | '/gpa-calculator' | '/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdvisorRoute: typeof AdvisorRoute
-  AppointmentsRoute: typeof AppointmentsRoute
-  AuditRoute: typeof AuditRoute
   DashboardRoute: typeof DashboardRoute
   GpaCalculatorRoute: typeof GpaCalculatorRoute
   LoginRoute: typeof LoginRoute
-  MessagesRoute: typeof MessagesRoute
-  PlanningRoute: typeof PlanningRoute
-  ReportRoute: typeof ReportRoute
-  SettingsRoute: typeof SettingsRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
-  StudentsStudentIdRoute: typeof StudentsStudentIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/report': {
-      id: '/report'
-      path: '/report'
-      fullPath: '/report'
-      preLoaderRoute: typeof ReportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planning': {
-      id: '/planning'
-      path: '/planning'
-      fullPath: '/planning'
-      preLoaderRoute: typeof PlanningRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -250,27 +92,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/audit': {
-      id: '/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AuditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appointments': {
-      id: '/appointments'
-      path: '/appointments'
-      fullPath: '/appointments'
-      preLoaderRoute: typeof AppointmentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/advisor': {
-      id: '/advisor'
-      path: '/advisor'
-      fullPath: '/advisor'
-      preLoaderRoute: typeof AdvisorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -278,37 +99,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/students/$studentId': {
-      id: '/students/$studentId'
-      path: '/students/$studentId'
-      fullPath: '/students/$studentId'
-      preLoaderRoute: typeof StudentsStudentIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdvisorRoute: AdvisorRoute,
-  AppointmentsRoute: AppointmentsRoute,
-  AuditRoute: AuditRoute,
   DashboardRoute: DashboardRoute,
   GpaCalculatorRoute: GpaCalculatorRoute,
   LoginRoute: LoginRoute,
-  MessagesRoute: MessagesRoute,
-  PlanningRoute: PlanningRoute,
-  ReportRoute: ReportRoute,
-  SettingsRoute: SettingsRoute,
-  AuthCallbackRoute: AuthCallbackRoute,
-  StudentsStudentIdRoute: StudentsStudentIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
