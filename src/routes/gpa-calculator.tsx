@@ -62,11 +62,16 @@ function GpaCalculatorPage() {
   const [search, setSearch] = useState("");
   const [showUclanOnly, setShowUclanOnly] = useState(false);
 
-  const { student } = useAppContext();
+  const { student, loading: ctxLoading } = useAppContext();
   const studentId = student?.id;
 
   useEffect(() => {
-    if (!studentId) return;
+    if (ctxLoading) return;
+    if (!studentId) {
+      setRows([emptyRow()]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     supabase
@@ -102,7 +107,7 @@ function GpaCalculatorPage() {
         }
         setLoading(false);
       });
-  }, [studentId]);
+  }, [studentId, ctxLoading]);
 
   const enrolledCodes = useMemo(
     () => new Set(rows.map((r) => r.course_code).filter(Boolean)),
