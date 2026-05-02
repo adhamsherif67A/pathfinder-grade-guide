@@ -83,12 +83,13 @@ function GpaCalculatorPage() {
 
     let active = true;
     setLoading(true);
-    supabase
-      .from("courses")
-      .select("id, course_name, letter_grade, credit_hours, course_code")
-      .eq("student_id", studentId)
-      .order("created_at", { ascending: true })
-      .then(({ data, error }) => {
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("courses")
+          .select("id, course_name, letter_grade, credit_hours, course_code")
+          .eq("student_id", studentId)
+          .order("created_at", { ascending: true });
         if (!active) return;
         if (error) {
           toast.error("Could not load courses");
@@ -116,13 +117,13 @@ function GpaCalculatorPage() {
           setRows([emptyRow()]);
         }
         setLoading(false);
-      })
-      .catch(() => {
+      } catch {
         if (!active) return;
         toast.error("Could not load courses");
         setRows([emptyRow()]);
         setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       active = false;
