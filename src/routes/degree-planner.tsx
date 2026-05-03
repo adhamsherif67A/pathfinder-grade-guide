@@ -302,55 +302,53 @@ function DegreePlannerPage() {
 
       {/* Catalog Dialog - Optimized for Mobile */}
       <Dialog open={catalogOpen} onOpenChange={setCatalogOpen}>
-        <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-3xl h-full sm:h-auto">
+        <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-3xl h-[92vh] sm:h-auto top-[4vh] sm:top-[50%] translate-y-0 sm:-translate-y-[50%]">
           <div className="p-4 sm:p-6 h-full flex flex-col">
-            <DialogHeader className="mb-6">
-               <DialogTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-2 rounded-2xl bg-primary/20"><BookOpen className="h-6 w-6 text-primary" /></div>
+            <DialogHeader className="mb-4 shrink-0">
+               <DialogTitle className="flex items-center gap-3 text-xl sm:text-2xl">
+                  <div className="p-2 rounded-2xl bg-primary/20"><BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-primary" /></div>
                   Subject Discovery
                </DialogTitle>
             </DialogHeader>
 
-            <div className="relative mb-6">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <div className="relative mb-4 shrink-0">
+               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                <Input 
-                  placeholder="Search by name or code..."
+                  placeholder="Search courses..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-14 rounded-2xl bg-white/5 border-white/10 text-lg shadow-inner"
+                  className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 text-base"
                />
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar pb-16 sm:pb-0">
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar pb-24 sm:pb-0 touch-pan-y">
                {filteredCatalog.length === 0 && (
-                  <div className="text-center py-20 text-muted-foreground animate-in fade-in zoom-in-95">
-                     <Search className="h-12 w-12 mx-auto mb-4 opacity-10" />
-                     <p>No available courses match your search.</p>
+                  <div className="text-center py-12 text-muted-foreground animate-in fade-in zoom-in-95">
+                     <Search className="h-10 w-10 mx-auto mb-3 opacity-10" />
+                     <p className="text-sm">No available courses match your search.</p>
                   </div>
                )}
                {filteredCatalog.map(course => (
-                  <div key={course.code} className={`glass-strong rounded-3xl p-5 border transition-all ${course.uclan ? 'border-l-4 border-l-[#FFC000]' : 'border-white/5'}`}>
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
+                  <div key={course.code} className={`glass-strong rounded-2xl p-4 border transition-all ${course.uclan ? 'border-l-4 border-l-[#FFC000]' : 'border-white/5'}`}>
+                    <div className="mb-4">
                         <div className="flex items-center gap-2 mb-1">
-                           <span className="font-mono text-[10px] text-primary font-black uppercase tracking-widest">{course.code}</span>
-                           {course.uclan && <Badge className="bg-[#FFC000] text-black text-[7px] h-3.5 border-none font-black uppercase">UCLAN (UK)</Badge>}
+                           <span className="font-mono text-[9px] text-primary font-black uppercase tracking-widest">{course.code}</span>
+                           {course.uclan && <Badge className="bg-[#FFC000] text-black text-[7px] h-3.5 border-none font-black uppercase">UCLAN</Badge>}
                         </div>
-                        <h4 className="font-bold text-base leading-tight">{course.name}</h4>
-                        <div className="text-[10px] text-muted-foreground mt-1 flex gap-2">
+                        <h4 className="font-bold text-sm leading-tight">{course.name}</h4>
+                        <div className="text-[9px] text-muted-foreground mt-1 flex gap-2">
                            <span className="px-2 py-0.5 rounded-full bg-white/5">{course.credits} Credits</span>
                            <span className="px-2 py-0.5 rounded-full bg-white/5">Semester {course.semester}</span>
                         </div>
-                      </div>
                     </div>
                     
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    <div className="grid grid-cols-4 gap-1.5">
                        {plannerSemesters.map(sem => (
                          <Button
                            key={sem}
                            size="sm"
                            variant="outline"
-                           className="h-9 rounded-xl text-[10px] font-black border-white/5 hover:bg-primary hover:text-primary-foreground hover:border-none transition-all"
+                           className="h-8 rounded-lg text-[9px] font-black border-white/5 bg-white/5 hover:bg-primary hover:text-primary-foreground transition-all"
                            onClick={() => addToPlan(course.code, sem)}
                          >
                            S{sem}
@@ -361,8 +359,10 @@ function DegreePlannerPage() {
                ))}
             </div>
             
-            <div className="sm:hidden absolute bottom-4 left-4 right-4">
-               <Button className="w-full h-14 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest" onClick={() => setCatalogOpen(false)}>Close Catalog</Button>
+            <div className="sm:hidden fixed bottom-6 left-6 right-6 z-[70]">
+               <Button className="w-full h-12 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest border-2 border-white/10" onClick={() => setCatalogOpen(false)}>
+                  Close Catalog
+               </Button>
             </div>
           </div>
         </DialogContent>
