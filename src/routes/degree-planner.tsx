@@ -225,16 +225,25 @@ function DegreePlannerPage() {
         {/* Planner Grid */}
         <section className="space-y-4">
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {plannerSemesters.map(semNum => (
-              <SemesterCol 
-                key={semNum} 
-                sem={semNum} 
-                courses={plannedCourses.filter(p => p.semester === semNum)}
-                violationMap={violationMap}
-                onRemove={removeFromPlan}
-                isRecommended={semNum === nextSemesterToPlan}
-              />
-            ))}
+            {plannerSemesters.map(semNum => {
+              const semPlanned = plannedCourses.filter(p => p.semester === semNum);
+              // Find completed courses that belong to this semester
+              const semCompleted = CURRICULUM.filter(c => 
+                c.semester === semNum && 
+                completedCodes.has(c.code.toUpperCase())
+              ).map(c => ({ course_code: c.code, isCompleted: true }));
+
+              return (
+                <SemesterCol 
+                  key={semNum} 
+                  sem={semNum} 
+                  courses={[...semCompleted, ...semPlanned.map(p => ({ ...p, isCompleted: false }))]}
+                  violationMap={violationMap}
+                  onRemove={removeFromPlan}
+                  isRecommended={semNum === nextSemesterToPlan}
+                />
+              );
+            })}
           </div>
 
           {/* Violations Summary */}
@@ -276,7 +285,7 @@ function SemesterCol({
   isRecommended
 }: { 
   sem: string; 
-  courses: PlannedCourse[]; 
+  courses: (PlannedCourse & { isCompleted: boolean })[]; 
   violationMap: Map<string, PrerequisiteViolation[]>;
   onRemove: (code: string) => void;
   isRecommended?: boolean;
@@ -306,6 +315,7 @@ function SemesterCol({
               <div 
                 key={plan.course_code} 
                 className={`glass rounded-xl p-3 border transition-all ${
+                  plan.isCompleted ? 'border-emerald-500/20 bg-emerald-500/5 opacity-80' :
                   hasViolation ? 'border-amber-500/50 bg-amber-500/10' : 'border-white/5 hover:border-white/20'
                 }`}
               >
@@ -313,13 +323,19 @@ function SemesterCol({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-[9px] bg-white/10 px-1 rounded">{plan.course_code}</span>
-                      {hasViolation && <AlertTriangle className="h-3 w-3 text-amber-500" />}
+                      {plan.isCompleted ? (
+                        <Badge className="text-[7px] h-3 px-1 bg-emerald-500/20 text-emerald-400 border-none">Passed</Badge>
+                      ) : hasViolation ? (
+                        <AlertTriangle className="h-3 w-3 text-amber-500" />
+                      ) : null}
                     </div>
                     <div className="text-xs font-semibold truncate mt-1">{course?.name}</div>
                   </div>
-                  <button onClick={() => onRemove(plan.course_code)} className="text-muted-foreground hover:text-destructive transition-colors p-1">
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+                  {!plan.isCompleted && (
+                    <button onClick={() => onRemove(plan.course_code)} className="text-muted-foreground hover:text-destructive transition-colors p-1">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               </div>
             );

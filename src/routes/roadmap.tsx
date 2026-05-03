@@ -1,0 +1,163 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { 
+  CheckCircle2, 
+  Lock, 
+  Unlock, 
+  Flag, 
+  Info,
+  Calendar,
+  Compass
+} from "lucide-react";
+import { AppShell } from "@/components/AppShell";
+import { Badge } from "@/components/ui/badge";
+import { useAppContext } from "@/lib/app-context";
+import { supabase } from "@/integrations/supabase/client";
+import { SEMESTERS } from "@/lib/curriculum";
+import { getCourseRoadmap, type PlannedCourse, type RoadmapCourse } from "@/lib/degree-planner";
+
+export const Route = createFileRoute("/roadmap")({
+  component: RoadmapRoute,
+});
+
+function RoadmapRoute() {
+  return (
+    <AppShell>
+      <RoadmapPage />
+    </AppShell>
+  );
+}
+
+function RoadmapPage() {
+  const { student, loading: ctxLoading } = useAppContext();
+  const [completedCodes, setCompletedCodes] = useState<Set<string>>(new Set());
+  const [plannedCourses, setPlannedCourses] = useState<PlannedCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (ctxLoading || !student) return;
+
+    async function loadData() {
+      const { data } = await supabase
+        .from("courses")
+        .select("course_code")
+        .eq("student_id", student.id)
+        .not("letter_grade", "eq", "F");
+
+      if (data) {
+        const codes = new Set(data.map(d => (d.course_code || "").trim().toUpperCase()).filter(Boolean));
+        setCompletedCodes(codes);
+      }
+      
+      const savedPlan = localStorage.getItem(`plan_${student.id}`);
+      if (savedPlan) {
+        setPlannedCourses(JSON.parse(savedPlan));
+      }
+      setLoading(false);
+    }
+
+    void loadData();
+  }, [student, ctxLoading]);
+
+  const roadmap = useMemo(() => 
+    getCourseRoadmap(completedCodes, plannedCourses), 
+    [completedCodes, plannedCourses]
+  );
+
+  if (loading) return <div className="text-center py-20 text-muted-foreground italic">Generating Visual Roadmap...</div>;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-gradient">Academic Roadmap</h1>
+          <p className="text-muted-foreground text-sm">
+            Visualizing the 144-credit Mechatronics journey (AAST x UCLAN)
+          </p>
+        </div>
+        <div className="flex gap-4 glass p-3 rounded-xl border-white/10">
+          <LegendItem icon={CheckCircle2} label="Completed" color="text-emerald-400" />
+          <LegendItem icon={Flag} label="Planned" color="text-primary" />
+          <LegendItem icon={Unlock} label="Unlocked" color="text-sky-400" />
+          <LegendItem icon={Lock} label="Locked" color="text-muted-foreground/40" />
+        </div>
+      </div>
+
+      <div className="space-y-12 pb-20">
+        {SEMESTERS.map((sem) => (
+          <section key={sem} className="relative">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/30 grid place-items-center shrink-0">
+                <Calendar className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">
+                {sem.startsWith("Conc") ? sem : `Semester ${sem}`}
+              </h2>
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 to-transparent" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {roadmap.filter(c => c.semester === sem).map(course => (
+                <RoadmapCard key={course.code} course={course} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RoadmapCard({ course }: { course: RoadmapCourse }) {
+  const isCompleted = course.status === "completed";
+  const isPlanned = course.status === "planned";
+  const isUnlocked = course.status === "unlocked";
+  const isLocked = course.status === "locked";
+
+  return (
+    <div className={`glass-strong rounded-2xl p-4 border transition-all duration-500 relative group ${
+      isCompleted ? "border-emerald-500/40 bg-emerald-500/5" :
+      isPlanned ? "border-primary/40 bg-primary/5 shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.1)]" :
+      isUnlocked ? "border-sky-500/30 bg-sky-500/5" :
+      "border-white/5 opacity-50 grayscale"
+    }`}>
+      <div className="flex justify-between items-start mb-2">
+        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">{course.code}</span>
+        {isCompleted && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+        {isPlanned && <Flag className="h-4 w-4 text-primary" />}
+        {isUnlocked && <Unlock className="h-4 w-4 text-sky-400" />}
+        {isLocked && <Lock className="h-4 w-4 text-muted-foreground/40" />}
+      </div>
+      
+      <h3 className="font-bold text-sm leading-tight mb-2 line-clamp-2">{course.name}</h3>
+      
+      <div className="flex items-center gap-2 mt-auto">
+        <Badge variant="outline" className="text-[9px] h-4 py-0 border-white/10">{course.credits} Cr</Badge>
+        {course.uclan && <Badge className="bg-[#FFC000] text-black text-[8px] h-4 py-0 hover:bg-[#FFC000]">UCLAN</Badge>}
+      </div>
+
+      {course.prerequisite && (
+        <div className="mt-3 pt-3 border-t border-white/5 flex items-start gap-2">
+          <Info className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-[9px] text-muted-foreground italic leading-tight">
+            Req: {course.prerequisite}
+          </p>
+        </div>
+      )}
+
+      {/* Decorative pulse for planned */}
+      {isPlanned && (
+        <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-ping opacity-75" />
+      )}
+    </div>
+  );
+}
+
+function LegendItem({ icon: Icon, label, color }: { icon: any, label: string, color: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className={`h-4 w-4 ${color}`} />
+      <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{label}</span>
+    </div>
+  );
+}

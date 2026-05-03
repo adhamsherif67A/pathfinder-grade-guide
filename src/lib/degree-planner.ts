@@ -62,27 +62,46 @@ export function validateDegreePlan(
   return violations;
 }
 
+export type CourseStatus = "completed" | "planned" | "unlocked" | "locked";
+
+export type RoadmapCourse = CurriculumCourse & {
+  status: CourseStatus;
+};
+
 /**
- * Suggests courses for a specific semester based on what is unlocked.
+ * Calculates the roadmap status for all courses in the curriculum.
  */
-export function suggestNextCourses(
+export function getCourseRoadmap(
   completedCourseCodes: Set<string>,
-  targetSemester: string
-): CurriculumCourse[] {
-  return CURRICULUM.filter(course => {
-    // Only suggest courses for the target semester (or generally recommended)
-    if (course.semester !== targetSemester) return false;
+  plannedCourses: PlannedCourse[]
+): RoadmapCourse[] {
+  const plannedSet = new Set(plannedCourses.map(p => p.course_code.toUpperCase()));
+  
+  return CURRICULUM.map(course => {
+    const code = course.code.toUpperCase();
     
-    // Filter out already completed
-    if (completedCourseCodes.has(course.code)) return false;
+    if (completedCourseCodes.has(code)) {
+      return { ...course, status: "completed" as CourseStatus };
+    }
     
-    // Check if prerequisites are met
-    if (!course.prerequisite) return true;
+    if (plannedSet.has(code)) {
+      return { ...course, status: "planned" as CourseStatus };
+    }
     
-    const prereqs = course.prerequisite.split('&').map(s => s.trim());
-    return prereqs.every(p => {
-      if (p.toLowerCase().includes('cr. hr.')) return true; // Ignore credit hour limits for suggestions
+    // Check if unlocked (all prerequisites met by COMPLETED courses)
+    if (!course.prerequisite) {
+      return { ...course, status: "unlocked" as CourseStatus };
+    }
+    
+    const prereqs = course.prerequisite.split('&').map(s => s.trim().toUpperCase());
+    const isUnlocked = prereqs.every(p => {
+      if (p.includes('CR. HR.')) return true; // Simple bypass for credit hour checks
       return completedCourseCodes.has(p);
     });
+    
+    return { 
+      ...course, 
+      status: (isUnlocked ? "unlocked" : "locked") as CourseStatus 
+    };
   });
 }

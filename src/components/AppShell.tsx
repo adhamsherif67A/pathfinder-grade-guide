@@ -170,6 +170,7 @@ export function AppShell({
                 <nav className="flex items-center gap-1">
                   {role === 'advisor' && navItem("/advisor", "Students", Users)}
                   {navItem("/dashboard", "Dashboard", LayoutDashboard)}
+                  {navItem("/roadmap", "Roadmap", Compass)}
                   {navItem("/degree-planner", "Planner", Map)}
                   {navItem("/gpa-calculator", "Calculator", Calculator)}
                   

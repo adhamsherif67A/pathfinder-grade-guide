@@ -14,6 +14,7 @@ import { Route as GpaCalculatorRouteImport } from './routes/gpa-calculator'
 import { Route as DegreePlannerRouteImport } from './routes/degree-planner'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdvisorRouteImport } from './routes/advisor'
+import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as IndexRouteImport } from './routes/index'
 
 const LoginRoute = LoginRouteImport.update({
@@ -41,6 +42,11 @@ const AdvisorRoute = AdvisorRouteImport.update({
   path: '/advisor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoadmapRoute = RoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/roadmap': typeof RoadmapRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/roadmap': typeof RoadmapRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,13 +79,14 @@ export interface FileRoutesById {
   '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/roadmap': typeof RoadmapRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login'
+  fullPaths: '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login' | '/roadmap'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login'
-  id: '__root__' | '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login'
+  to: '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login' | '/roadmap'
+  id: '__root__' | '/' | '/advisor' | '/dashboard' | '/degree-planner' | '/gpa-calculator' | '/login' | '/roadmap'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -87,6 +96,7 @@ export interface RootRouteChildren {
   DegreePlannerRoute: typeof DegreePlannerRoute
   GpaCalculatorRoute: typeof GpaCalculatorRoute
   LoginRoute: typeof LoginRoute
+  RoadmapRoute: typeof RoadmapRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -126,6 +136,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdvisorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -143,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   DegreePlannerRoute: DegreePlannerRoute,
   GpaCalculatorRoute: GpaCalculatorRoute,
   LoginRoute: LoginRoute,
+  RoadmapRoute: RoadmapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
