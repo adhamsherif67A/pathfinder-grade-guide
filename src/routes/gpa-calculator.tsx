@@ -304,27 +304,27 @@ function GpaCalculatorPage() {
                     <Plus className="h-4 w-4" /> Enroll from Curriculum
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-3xl h-full sm:h-auto">
-                   <div className="p-4 sm:p-6 h-full flex flex-col">
-                    <DialogHeader className="mb-4">
-                      <DialogTitle className="flex items-center gap-2 text-xl">
-                        <GraduationCap className="h-6 w-6 text-primary" /> Mechatronics Catalog
+                <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-3xl h-[88vh] sm:h-auto flex flex-col focus:outline-none">
+                   <div className="p-4 sm:p-8 flex flex-col h-full overflow-hidden">
+                    <DialogHeader className="mb-4 shrink-0">
+                      <DialogTitle className="flex items-center gap-3 text-2xl font-black tracking-tighter">
+                        <GraduationCap className="h-7 w-7 text-primary" /> Subject Catalog
                       </DialogTitle>
                     </DialogHeader>
 
-                    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-4">
+                    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-6 shrink-0">
                       <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
                           placeholder="Search courses..."
-                          className="pl-10 bg-white/5 h-11 border-white/15 rounded-xl"
+                          className="pl-11 h-12 bg-white/5 border-white/15 rounded-2xl text-base"
                         />
                       </div>
                       <div className="flex gap-2">
                         <Select value={filterSem} onValueChange={setFilterSem}>
-                          <SelectTrigger className="flex-1 sm:w-[140px] h-11 bg-white/5 border-white/15 rounded-xl text-xs font-bold">
+                          <SelectTrigger className="flex-1 sm:w-[140px] h-12 bg-white/5 border-white/15 rounded-2xl text-xs font-bold">
                             <SelectValue placeholder="Sem" />
                           </SelectTrigger>
                           <SelectContent>
@@ -338,42 +338,44 @@ function GpaCalculatorPage() {
                           variant={showUclanOnly ? "default" : "outline"}
                           size="icon"
                           onClick={() => setShowUclanOnly((v) => !v)}
-                          className={`h-11 w-11 rounded-xl transition-all ${showUclanOnly ? 'bg-[#FFC000] text-black border-none' : 'border-white/15 text-muted-foreground'}`}
+                          className={`h-12 w-12 rounded-2xl transition-all ${showUclanOnly ? 'bg-[#FFC000] text-black border-none' : 'border-white/15 text-muted-foreground'}`}
                         >
                           <GraduationCap className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar pb-12 sm:pb-0">
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar pb-24 sm:pb-2 touch-pan-y overscroll-contain">
                       {filteredCatalog.map((c) => {
                         const enrolled = enrolledCodes.has(c.code);
                         return (
-                          <div key={c.code} className={`glass rounded-2xl p-4 flex items-center justify-between gap-3 border transition-all ${c.uclan ? 'border-l-4 border-l-[#FFC000]' : 'border-white/5'}`}>
+                          <div key={c.code} className={`glass-strong rounded-[1.5rem] p-5 flex items-center justify-between gap-4 border transition-all ${c.uclan ? 'border-l-8 border-l-[#FFC000]' : 'border-white/5'}`}>
                             <div className="min-w-0">
                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/10">{c.code}</span>
-                                  {c.uclan && <Badge className="bg-[#FFC000] text-black text-[8px] h-3.5 border-none">UCLAN</Badge>}
+                                  <span className="font-mono text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-lg">{c.code}</span>
+                                  {c.uclan && <Badge className="bg-[#FFC000] text-black text-[8px] h-4 border-none font-black uppercase">UCLAN</Badge>}
                                </div>
-                               <div className="font-bold text-sm truncate">{c.name}</div>
-                               <div className="text-[10px] text-muted-foreground mt-1">{c.credits} Cr · Semester {c.semester}</div>
+                               <div className="font-bold text-sm sm:text-base truncate tracking-tight">{c.name}</div>
+                               <div className="text-[10px] font-bold text-muted-foreground mt-1 uppercase tracking-widest opacity-60">{c.credits} Cr • Term {c.semester}</div>
                             </div>
                             <Button
                               size="sm"
                               variant={enrolled ? "ghost" : "default"}
                               disabled={enrolled}
                               onClick={() => enroll(c)}
-                              className="rounded-xl px-4 h-10 font-bold"
+                              className="rounded-xl px-5 h-10 font-black text-xs uppercase tracking-wider shadow-lg"
                             >
-                              {enrolled ? "Enrolled" : "Enroll"}
+                              {enrolled ? "Added" : "Add"}
                             </Button>
                           </div>
                         );
                       })}
                     </div>
                     
-                    <div className="sm:hidden absolute bottom-4 left-4 right-4">
-                       <Button className="w-full h-12 rounded-2xl shadow-lg" onClick={() => setPickerOpen(false)}>Done Browsing</Button>
+                    <div className="sm:hidden absolute bottom-6 left-6 right-6 z-[70]">
+                       <Button className="w-full h-14 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] font-black text-xs uppercase tracking-widest border-2 border-white/10 bg-background/80 backdrop-blur-xl" onClick={() => setPickerOpen(false)}>
+                          Done Browsing
+                       </Button>
                     </div>
                    </div>
                 </DialogContent>
