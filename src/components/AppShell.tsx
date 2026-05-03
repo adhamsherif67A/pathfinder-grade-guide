@@ -46,6 +46,7 @@ export function AppShell({
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [student, setStudent] = useState<AppStudent | null>(null);
+  const [profilePic, setProfilePic] = useState<string | null>(null);
   const role: AppRole | null = profile?.role ?? null;
 
   const refresh = async () => {
@@ -55,6 +56,7 @@ export function AppShell({
       if (!user) {
         setProfile(null);
         setStudent(null);
+        setProfilePic(null);
         if (requireAuth) navigate({ to: "/login" });
         return;
       }
@@ -63,12 +65,19 @@ export function AppShell({
       if (!p) {
         setProfile(null);
         setStudent(null);
+        setProfilePic(null);
         if (requireAuth) navigate({ to: "/login" });
         return;
       }
 
       setProfile(p);
-      setStudent(p.student_id ? await getStudentById(p.student_id) : null);
+      const sData = p.student_id ? await getStudentById(p.student_id) : null;
+      setStudent(sData);
+
+      // Load profile pic
+      if (sData) {
+        setProfilePic(localStorage.getItem(`profile_pic_${sData.id}`));
+      }
     } finally {
       setLoading(false);
     }
@@ -76,13 +85,23 @@ export function AppShell({
 
   useEffect(() => {
     void refresh();
+    
+    const handleStorageChange = () => {
+      if (student) {
+        setProfilePic(localStorage.getItem(`profile_pic_${student.id}`));
+      }
+    };
+
     const { data } = supabase.auth.onAuthStateChange(() => {
       void refresh();
     });
+
+    window.addEventListener('storage', handleStorageChange);
     return () => {
       data.subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
     };
-  }, [requireAuth]);
+  }, [requireAuth, student?.id]);
 
   const logout = async () => {
     await signOut();
@@ -197,7 +216,8 @@ export function AppShell({
                   <ThemeToggle />
                   <Link to="/profile" className="transition-transform hover:scale-110 active:scale-95">
                     <Avatar className="h-9 w-9 border-2 border-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
+                      <AvatarImage src={profilePic || undefined} alt="Profile" className="object-cover" />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{initials}</AvatarFallback>
                     </Avatar>
                   </Link>
                   <Button variant="ghost" size="sm" onClick={logout} className="rounded-xl gap-2 hover:bg-destructive/10 hover:text-destructive">

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { 
   User, 
   Award, 
@@ -9,8 +9,9 @@ import {
   ShieldCheck,
   Zap,
   GraduationCap,
-  History,
-  TrendingUp
+  TrendingUp,
+  Camera,
+  Trash2
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { calculateGPA } from "@/lib/gpa";
 import { calculateStudentStats, type StudentStats } from "@/lib/student-stats";
 import { CURRICULUM_BY_CODE } from "@/lib/curriculum";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
   component: ProfileRoute,
@@ -37,9 +39,15 @@ function ProfilePage() {
   const { student, loading: ctxLoading } = useAppContext();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profilePic, setProfilePic] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (ctxLoading || !student) return;
+
+    // Load profile pic from local storage
+    const savedPic = localStorage.getItem(`profile_pic_${student.id}`);
+    if (savedPic) setProfilePic(savedPic);
 
     async function fetchRecord() {
       const { data } = await supabase
@@ -52,6 +60,34 @@ function ProfilePage() {
     }
     void fetchRecord();
   }, [student, ctxLoading]);
+
+  const handlePicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !student) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image too large. Max 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setProfilePic(base64);
+      localStorage.setItem(`profile_pic_${student.id}`, base64);
+      window.dispatchEvent(new Event('storage')); // Trigger update in AppShell
+      toast.success("Profile picture updated!");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePic = () => {
+    if (!student) return;
+    setProfilePic(null);
+    localStorage.removeItem(`profile_pic_${student.id}`);
+    window.dispatchEvent(new Event('storage'));
+    toast.info("Profile picture removed");
+  };
 
   const stats = useMemo(() => {
     const gpaResult = calculateGPA(courses.map(c => ({
@@ -69,7 +105,6 @@ function ProfilePage() {
     );
   }, [courses]);
 
-  // Specialization Calculation Logic
   const specialization = useMemo(() => {
     let automationCount = 0;
     let aiCount = 0;
@@ -111,27 +146,50 @@ function ProfilePage() {
   if (loading) return <div className="text-center py-20 text-muted-foreground animate-pulse italic">Generating Academic Identity...</div>;
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-20">
+    <div className="space-y-8 max-w-4xl mx-auto pb-20 px-2">
       {/* 1. Profile Header Card */}
       <section className="glass-strong rounded-[2.5rem] p-8 border border-white/10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12">
+        <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 pointer-events-none">
             <User className="h-48 w-48" />
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-center relative z-10">
-          <div className="h-32 w-32 rounded-3xl bg-gradient-to-br from-primary to-accent p-1 shadow-2xl">
-             <div className="h-full w-full rounded-[1.4rem] bg-background grid place-items-center">
-                <User className="h-16 w-16 text-primary" />
-             </div>
+          <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <div className="h-32 w-32 rounded-3xl bg-gradient-to-br from-primary to-accent p-1 shadow-2xl overflow-hidden">
+               <div className="h-full w-full rounded-[1.4rem] bg-background grid place-items-center overflow-hidden">
+                  {profilePic ? (
+                    <img src={profilePic} className="h-full w-full object-cover" alt="Profile" />
+                  ) : (
+                    <User className="h-16 w-16 text-primary" />
+                  )}
+               </div>
+            </div>
+            <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+               <Camera className="h-8 w-8 text-white" />
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handlePicUpload} 
+            />
           </div>
           
           <div className="text-center md:text-left flex-1">
-            <Badge variant="outline" className="mb-2 border-primary/20 text-primary uppercase tracking-[0.2em] text-[10px] font-black">
-              Official Student Record
-            </Badge>
+            <div className="flex flex-col md:flex-row items-center gap-3 mb-2">
+              <Badge variant="outline" className="border-primary/20 text-primary uppercase tracking-[0.2em] text-[10px] font-black">
+                Official Student Record
+              </Badge>
+              {profilePic && (
+                <button onClick={removePic} className="text-[9px] font-bold text-destructive flex items-center gap-1 opacity-60 hover:opacity-100">
+                  <Trash2 className="h-3 w-3" /> Remove Photo
+                </button>
+              )}
+            </div>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tighter mb-2">{student?.full_name}</h1>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              <span className="flex items-center gap-2"><History className="h-3 w-3" /> Class of {student?.enrollment_year ? student.enrollment_year + 5 : "2027"}</span>
+              <span className="flex items-center gap-2">Reg: {student?.registration_number}</span>
             </div>
           </div>
         </div>
