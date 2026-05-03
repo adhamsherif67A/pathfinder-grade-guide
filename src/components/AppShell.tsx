@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Calculator,
+  Compass,
   LayoutDashboard,
   LogOut,
   Map,
