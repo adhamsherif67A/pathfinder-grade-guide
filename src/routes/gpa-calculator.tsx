@@ -236,7 +236,7 @@ function GpaCalculatorPage() {
   const projection = calculateRequiredGrades(totalPoints, totalCredits, targetGpa, remainingCredits);
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-24 md:pb-20">
       <div className="flex flex-wrap items-end justify-between gap-4 px-1">
         <div className="flex-1 min-w-[200px]">
           <h1 className="text-2xl sm:text-3xl font-bold text-gradient">GPA Calculator</h1>
@@ -244,16 +244,27 @@ function GpaCalculatorPage() {
         </div>
         
         <div className="flex w-full sm:w-auto gap-2">
-           <Button variant="ghost" onClick={reset} size="sm" className="flex-1 sm:flex-none text-muted-foreground h-10 px-4">
+           <Button variant="ghost" onClick={reset} size="sm" className="flex-1 sm:flex-none text-muted-foreground h-11 px-4 rounded-xl">
               <RotateCcw className="h-4 w-4 mr-2" /> Reset
            </Button>
-           <Button onClick={save} disabled={saving} size="sm" className="flex-1 sm:flex-none shadow-xl h-10 px-6">
+           <Button onClick={save} disabled={saving} size="sm" className="flex-1 sm:flex-none shadow-xl h-11 px-6 rounded-xl font-bold">
               <Save className="h-4 w-4 mr-2" /> {saving ? "Saving..." : "Save Record"}
            </Button>
         </div>
       </div>
 
-      {/* GPA & Recommendation Summary - Mobile First */}
+      {/* Floating Action Button for Mobile */}
+      <div className="md:hidden fixed bottom-24 right-6 z-50">
+        <Button 
+          size="icon" 
+          className="h-14 w-14 rounded-full shadow-2xl shadow-primary/40 border-2 border-white/20"
+          onClick={() => setPickerOpen(true)}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* GPA & Recommendation Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <div className="glass-strong rounded-3xl p-6 flex flex-col items-center justify-center text-center">
             <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">Current GPA</div>
@@ -289,12 +300,12 @@ function GpaCalculatorPage() {
              
              <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 gap-2 bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground transition-all">
-                    <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Enroll from</span> Curriculum
+                  <Button variant="outline" size="sm" className="hidden md:flex rounded-xl h-9 px-4 gap-2 bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground transition-all">
+                    <Plus className="h-4 w-4" /> Enroll from Curriculum
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden">
-                   <div className="p-6">
+                <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-3xl h-full sm:h-auto">
+                   <div className="p-4 sm:p-6 h-full flex flex-col">
                     <DialogHeader className="mb-4">
                       <DialogTitle className="flex items-center gap-2 text-xl">
                         <GraduationCap className="h-6 w-6 text-primary" /> Mechatronics Catalog
@@ -308,12 +319,12 @@ function GpaCalculatorPage() {
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
                           placeholder="Search courses..."
-                          className="pl-10 bg-white/5 h-10 border-white/15 rounded-xl"
+                          className="pl-10 bg-white/5 h-11 border-white/15 rounded-xl"
                         />
                       </div>
                       <div className="flex gap-2">
                         <Select value={filterSem} onValueChange={setFilterSem}>
-                          <SelectTrigger className="w-[140px] h-10 bg-white/5 border-white/15 rounded-xl text-xs">
+                          <SelectTrigger className="flex-1 sm:w-[140px] h-11 bg-white/5 border-white/15 rounded-xl text-xs font-bold">
                             <SelectValue placeholder="Sem" />
                           </SelectTrigger>
                           <SelectContent>
@@ -327,15 +338,14 @@ function GpaCalculatorPage() {
                           variant={showUclanOnly ? "default" : "outline"}
                           size="icon"
                           onClick={() => setShowUclanOnly((v) => !v)}
-                          className={`h-10 w-10 rounded-xl transition-all ${showUclanOnly ? 'bg-[#FFC000] text-black border-none' : 'border-white/15 text-muted-foreground'}`}
-                          title="Show UCLAN only"
+                          className={`h-11 w-11 rounded-xl transition-all ${showUclanOnly ? 'bg-[#FFC000] text-black border-none' : 'border-white/15 text-muted-foreground'}`}
                         >
-                          <GraduationCap className="h-4 w-4" />
+                          <GraduationCap className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
 
-                    <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar pb-12 sm:pb-0">
                       {filteredCatalog.map((c) => {
                         const enrolled = enrolledCodes.has(c.code);
                         return (
@@ -353,13 +363,17 @@ function GpaCalculatorPage() {
                               variant={enrolled ? "ghost" : "default"}
                               disabled={enrolled}
                               onClick={() => enroll(c)}
-                              className="rounded-xl px-4 h-9"
+                              className="rounded-xl px-4 h-10 font-bold"
                             >
                               {enrolled ? "Enrolled" : "Enroll"}
                             </Button>
                           </div>
                         );
                       })}
+                    </div>
+                    
+                    <div className="sm:hidden absolute bottom-4 left-4 right-4">
+                       <Button className="w-full h-12 rounded-2xl shadow-lg" onClick={() => setPickerOpen(false)}>Done Browsing</Button>
                     </div>
                    </div>
                 </DialogContent>

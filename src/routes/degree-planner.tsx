@@ -8,11 +8,21 @@ import {
   Plus,
   Trash2,
   ArrowRightCircle,
-  RotateCcw
+  RotateCcw,
+  Search,
+  BookOpen
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 import { CURRICULUM, CURRICULUM_BY_CODE } from "@/lib/curriculum";
@@ -38,6 +48,10 @@ function DegreePlannerPage() {
   const [plannedCourses, setPlannedCourses] = useState<PlannedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCommitting, setIsCommitting] = useState(false);
+  
+  // UI State
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (ctxLoading) return;
@@ -139,7 +153,7 @@ function DegreePlannerPage() {
           student_id: student.id,
           course_code: p.course_code,
           course_name: cur?.name || p.course_code,
-          letter_grade: "A", // Default to A
+          letter_grade: "A", 
           credit_hours: cur?.credits || 3
         };
       });
@@ -147,10 +161,7 @@ function DegreePlannerPage() {
       const { error } = await supabase.from("courses").insert(toInsert as never);
       if (error) throw error;
 
-      // Remove from plan
       setPlannedCourses(prev => prev.filter(p => p.semester !== semester));
-      
-      // Update local enrolled set to prevent re-adding
       setEnrolledCodes(prev => {
         const next = new Set(prev);
         termPlanned.forEach(p => next.add(p.course_code));
@@ -171,9 +182,20 @@ function DegreePlannerPage() {
   };
 
   const resetPlan = () => {
-    setPlannedCourses([]);
-    toast.success("Planner cleared");
+    if (window.confirm("Clear your entire future plan? Your actual GPA record will not be affected.")) {
+      setPlannedCourses([]);
+      toast.success("Planner cleared");
+    }
   };
+
+  const filteredCatalog = useMemo(() => {
+    return CURRICULUM.filter(c => {
+      const isAlreadyIn = enrolledCodes.has(c.code.toUpperCase()) || plannedCourses.some(p => p.course_code === c.code.toUpperCase());
+      if (isAlreadyIn) return false;
+      if (!searchTerm) return true;
+      return c.code.toLowerCase().includes(searchTerm.toLowerCase()) || c.name.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  }, [enrolledCodes, plannedCourses, searchTerm]);
 
   if (loading) return <div className="text-center py-20 text-muted-foreground italic">Syncing Academic Record...</div>;
 
@@ -185,8 +207,7 @@ function DegreePlannerPage() {
         </div>
         <h2 className="text-xl font-bold mb-2">Student Profile Required</h2>
         <p className="text-muted-foreground text-sm mb-6">
-          The Degree Planner helps students map their curriculum journey. 
-          As an advisor, you can view this tool on individual student profiles soon.
+          Advisors can view roadmaps from the Student Directory.
         </p>
         <Link to="/advisor">
           <Button>Go to Student Directory</Button>
@@ -198,128 +219,154 @@ function DegreePlannerPage() {
   const plannerSemesters = ["1", "2", "3", "4", "5", "6", "7", "8", "Conc. 1", "Conc. 2"];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-gradient">Strategic Degree Planner</h1>
-          <p className="text-muted-foreground text-sm">
-            Map out your future semesters and detect prerequisite conflicts automatically.
-          </p>
+    <div className="space-y-6 pb-24 md:pb-20">
+      <div className="flex flex-wrap items-end justify-between gap-4 px-1">
+        <div className="flex-1 min-w-[200px]">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Strategic Planner</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Map your future semesters and detect conflicts</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={resetPlan} className="text-muted-foreground hover:text-destructive">
-            <RotateCcw className="h-4 w-4 mr-1" /> Reset Plan
-          </Button>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            {passedCodes.size} Passed
-          </Badge>
-          <Badge variant="outline" className="bg-accent/5 text-accent border-accent/20">
-            {plannedCourses.length} Planned
-          </Badge>
+        
+        <div className="flex w-full sm:w-auto gap-2">
+           <Button variant="ghost" onClick={resetPlan} size="sm" className="flex-1 sm:flex-none text-muted-foreground h-11 px-4 rounded-xl">
+              <RotateCcw className="h-4 w-4 mr-2" /> Reset
+           </Button>
+           <Button variant="outline" onClick={() => setCatalogOpen(true)} size="sm" className="flex-1 sm:flex-none h-11 px-6 rounded-xl border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground gap-2 font-bold">
+              <Plus className="h-4 w-4" /> Add Courses
+           </Button>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[380px_1fr] gap-6">
-        {/* Course Catalog */}
-        <section className="glass-strong rounded-2xl p-6 h-[80vh] flex flex-col">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-primary">
-            <Plus className="h-5 w-5" /> Available Courses
-          </h2>
-          <div className="overflow-y-auto space-y-2 pr-2">
-            {CURRICULUM.filter(c => !enrolledCodes.has(c.code.toUpperCase()) && !plannedCourses.some(p => p.course_code === c.code.toUpperCase()))
-              .map(course => {
-                const isNextSem = course.semester === nextSemesterToPlan;
-                return (
-                  <div key={course.code} className={`glass rounded-xl p-3 border transition-all group ${isNextSem ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20' : 'border-white/5 hover:border-white/20'}`}>
-                    <div className="flex justify-between items-start">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="font-mono text-[10px] text-muted-foreground uppercase">{course.code}</div>
-                          {isNextSem && <Badge className="text-[8px] h-3 px-1 uppercase bg-primary text-primary-foreground">Next Sem</Badge>}
+      {/* Floating Add Button for Mobile */}
+      <div className="md:hidden fixed bottom-24 right-6 z-50">
+        <Button 
+          size="icon" 
+          className="h-14 w-14 rounded-full shadow-2xl shadow-primary/40 border-2 border-white/20"
+          onClick={() => setCatalogOpen(true)}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {plannerSemesters.map(semNum => {
+            const semPlanned = plannedCourses.filter(p => p.semester === semNum);
+            const semCompleted = CURRICULUM.filter(c => 
+              c.semester === semNum && 
+              passedCodes.has(c.code.toUpperCase())
+            ).map(c => ({ course_code: c.code, isCompleted: true }));
+
+            return (
+              <SemesterCol 
+                key={semNum} 
+                sem={semNum} 
+                courses={[...semCompleted, ...semPlanned.map(p => ({ ...p, isCompleted: false }))]}
+                violationMap={violationMap}
+                onRemove={removeFromPlan}
+                onCommit={commitTerm}
+                isRecommended={semNum === nextSemesterToPlan}
+              />
+            );
+          })}
+        </div>
+
+        {/* Conflict Analysis Bar */}
+        <div className={`glass-strong rounded-3xl p-6 border-l-4 transition-all duration-500 ${violations.length === 0 ? 'border-emerald-500' : 'border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.1)]'}`}>
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="font-black uppercase tracking-tighter flex items-center gap-2">
+                {violations.length === 0 ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <AlertTriangle className="h-5 w-5 text-amber-500" />}
+                Academic Integrity Check
+             </h3>
+             <Badge variant="outline" className={violations.length === 0 ? 'text-emerald-500' : 'text-amber-500'}>
+                {violations.length} {violations.length === 1 ? 'Conflict' : 'Conflicts'} Found
+             </Badge>
+          </div>
+          
+          {violations.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">Your current degree path is mathematically valid and respects all prerequisites.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-3">
+              {violations.map((v, idx) => (
+                <div key={idx} className="glass rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5 flex gap-4">
+                  <ArrowRightCircle className="h-5 w-5 text-amber-500 shrink-0 mt-1" />
+                  <div>
+                    <div className="font-bold text-xs text-amber-200">{v.course_code} PREREQUISITE ERROR</div>
+                    <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{v.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Catalog Dialog - Optimized for Mobile */}
+      <Dialog open={catalogOpen} onOpenChange={setCatalogOpen}>
+        <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-3xl h-full sm:h-auto">
+          <div className="p-4 sm:p-6 h-full flex flex-col">
+            <DialogHeader className="mb-6">
+               <DialogTitle className="flex items-center gap-3 text-2xl">
+                  <div className="p-2 rounded-2xl bg-primary/20"><BookOpen className="h-6 w-6 text-primary" /></div>
+                  Subject Discovery
+               </DialogTitle>
+            </DialogHeader>
+
+            <div className="relative mb-6">
+               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+               <Input 
+                  placeholder="Search by name or code..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 h-14 rounded-2xl bg-white/5 border-white/10 text-lg shadow-inner"
+               />
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar pb-16 sm:pb-0">
+               {filteredCatalog.length === 0 && (
+                  <div className="text-center py-20 text-muted-foreground animate-in fade-in zoom-in-95">
+                     <Search className="h-12 w-12 mx-auto mb-4 opacity-10" />
+                     <p>No available courses match your search.</p>
+                  </div>
+               )}
+               {filteredCatalog.map(course => (
+                  <div key={course.code} className={`glass-strong rounded-3xl p-5 border transition-all ${course.uclan ? 'border-l-4 border-l-[#FFC000]' : 'border-white/5'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                           <span className="font-mono text-[10px] text-primary font-black uppercase tracking-widest">{course.code}</span>
+                           {course.uclan && <Badge className="bg-[#FFC000] text-black text-[7px] h-3.5 border-none font-black uppercase">UCLAN (UK)</Badge>}
                         </div>
-                        <div className="font-semibold text-sm truncate">{course.name}</div>
+                        <h4 className="font-bold text-base leading-tight">{course.name}</h4>
+                        <div className="text-[10px] text-muted-foreground mt-1 flex gap-2">
+                           <span className="px-2 py-0.5 rounded-full bg-white/5">{course.credits} Credits</span>
+                           <span className="px-2 py-0.5 rounded-full bg-white/5">Semester {course.semester}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-3 overflow-x-auto pb-1">
-                      <div className="flex gap-1">
-                        {plannerSemesters.map(sem => (
-                          <button
-                            key={sem}
-                            onClick={() => addToPlan(course.code, sem)}
-                            className={`h-7 px-2 shrink-0 rounded text-[9px] font-bold transition-colors ${
-                              sem === course.semester 
-                                ? 'bg-primary/20 text-primary border border-primary/30' 
-                                : 'bg-white/5 text-muted-foreground hover:bg-primary hover:text-primary-foreground'
-                            }`}
-                          >
-                            S{sem}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {course.prerequisite && (
-                      <div className="mt-2 text-[9px] text-muted-foreground italic flex items-center gap-1 opacity-60">
-                        <Info className="h-3 w-3 shrink-0" /> Prereq: {course.prerequisite}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </section>
-
-        {/* Planner Grid */}
-        <section className="space-y-4">
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {plannerSemesters.map(semNum => {
-              const semPlanned = plannedCourses.filter(p => p.semester === semNum);
-              // Find passed courses that belong to this semester
-              const semCompleted = CURRICULUM.filter(c => 
-                c.semester === semNum && 
-                passedCodes.has(c.code.toUpperCase())
-              ).map(c => ({ course_code: c.code, isCompleted: true }));
-
-              return (
-                <SemesterCol 
-                  key={semNum} 
-                  sem={semNum} 
-                  courses={[...semCompleted, ...semPlanned.map(p => ({ ...p, isCompleted: false }))]}
-                  violationMap={violationMap}
-                  onRemove={removeFromPlan}
-                  onCommit={commitTerm}
-                  isRecommended={semNum === nextSemesterToPlan}
-                />
-              );
-            })}
-          </div>
-
-          {/* Violations Summary */}
-          <div className="glass-strong rounded-2xl p-6 border-l-4 border-amber-500">
-            <h3 className="font-bold flex items-center gap-2 text-amber-500 mb-4">
-              <AlertTriangle className="h-5 w-5" /> 
-              Prerequisite Conflict Analysis
-            </h3>
-            {violations.length === 0 ? (
-              <div className="flex items-center gap-3 text-emerald-400 bg-emerald-400/5 p-4 rounded-xl border border-emerald-400/20">
-                <CheckCircle2 className="h-6 w-6" />
-                <div className="text-sm font-medium">Your current degree plan is valid! No prerequisite violations detected.</div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {violations.map((v, idx) => (
-                  <div key={idx} className="glass rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 flex gap-4">
-                    <ArrowRightCircle className="h-5 w-5 text-amber-500 shrink-0 mt-1" />
-                    <div>
-                      <div className="font-bold text-amber-200">{v.course_code} Conflict</div>
-                      <p className="text-xs text-muted-foreground mt-1">{v.message}</p>
+                    
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                       {plannerSemesters.map(sem => (
+                         <Button
+                           key={sem}
+                           size="sm"
+                           variant="outline"
+                           className="h-9 rounded-xl text-[10px] font-black border-white/5 hover:bg-primary hover:text-primary-foreground hover:border-none transition-all"
+                           onClick={() => addToPlan(course.code, sem)}
+                         >
+                           S{sem}
+                         </Button>
+                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+               ))}
+            </div>
+            
+            <div className="sm:hidden absolute bottom-4 left-4 right-4">
+               <Button className="w-full h-14 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest" onClick={() => setCatalogOpen(false)}>Close Catalog</Button>
+            </div>
           </div>
-        </section>
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -340,21 +387,21 @@ function SemesterCol({
   isRecommended?: boolean;
 }) {
   return (
-    <div className={`glass-strong rounded-2xl p-5 flex flex-col h-full min-h-[180px] border transition-all duration-500 ${isRecommended ? 'border-primary/50 shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.1)] scale-[1.02] z-10' : 'border-white/5'}`}>
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
-        <h3 className={`font-bold flex items-center gap-2 ${isRecommended ? 'text-primary' : 'text-foreground/80'}`}>
+    <div className={`glass-strong rounded-3xl p-5 flex flex-col h-full min-h-[180px] border transition-all duration-500 ${isRecommended ? 'border-primary shadow-[0_0_40px_rgba(var(--color-primary-rgb),0.15)] scale-[1.02] z-10' : 'border-white/5'}`}>
+      <div className="flex items-center justify-between mb-5 pb-3 border-b border-white/5">
+        <h3 className={`font-black uppercase tracking-tighter flex items-center gap-2 ${isRecommended ? 'text-primary' : 'text-foreground/60'}`}>
           <Calendar className="h-4 w-4" /> Sem {sem}
-          {isRecommended && <Badge className="text-[7px] h-3 px-1 bg-primary text-primary-foreground">Next</Badge>}
+          {isRecommended && <Badge className="text-[7px] h-3.5 px-1 bg-primary text-primary-foreground border-none">Active</Badge>}
         </h3>
-        <Badge variant="secondary" className="text-[10px]">
-          {courses.reduce((acc, c) => acc + (CURRICULUM_BY_CODE[c.course_code.toUpperCase()]?.credits || 0), 0)} Cr
-        </Badge>
+        <div className="text-[10px] font-black text-muted-foreground bg-white/5 px-2 py-0.5 rounded-lg">
+          {courses.reduce((acc, c) => acc + (CURRICULUM_BY_CODE[c.course_code.toUpperCase()]?.credits || 0), 0)} CR
+        </div>
       </div>
 
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-3">
         {courses.length === 0 ? (
-          <div className="h-full min-h-[60px] flex items-center justify-center border-2 border-dashed border-white/5 rounded-xl text-[10px] text-muted-foreground uppercase tracking-widest">
-            No courses
+          <div className="h-full min-h-[80px] flex items-center justify-center border-2 border-dashed border-white/5 rounded-2xl text-[9px] text-muted-foreground/30 uppercase tracking-[0.2em] font-black">
+            Empty Slot
           </div>
         ) : (
           courses.map(plan => {
@@ -363,27 +410,32 @@ function SemesterCol({
             return (
               <div 
                 key={plan.course_code} 
-                className={`glass rounded-xl p-3 border transition-all ${
-                  plan.isCompleted ? 'border-emerald-500/20 bg-emerald-500/5 opacity-80' :
-                  hasViolation ? 'border-amber-500/50 bg-amber-500/10' : 'border-white/5 hover:border-white/20'
+                className={`glass-strong rounded-2xl p-4 border transition-all ${
+                  plan.isCompleted ? 'border-emerald-500/20 bg-emerald-500/5 opacity-60 grayscale-[0.5]' :
+                  hasViolation ? 'border-amber-500/50 bg-amber-500/10' : 'border-white/10 hover:border-white/20'
                 }`}
               >
-                <div className="flex justify-between items-start gap-2">
+                <div className="flex justify-between items-start gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[9px] bg-white/10 px-1 rounded">{plan.course_code}</span>
+                      <span className="font-mono text-[9px] font-black text-primary/80">{plan.course_code}</span>
                       {plan.isCompleted ? (
-                        <Badge className="text-[7px] h-3 px-1 bg-emerald-500/20 text-emerald-400 border-none">Passed</Badge>
+                        <Badge className="text-[7px] h-3.5 px-1.5 bg-emerald-500/20 text-emerald-400 border-none font-bold">PASSED</Badge>
                       ) : hasViolation ? (
                         <AlertTriangle className="h-3 w-3 text-amber-500" />
                       ) : null}
                     </div>
-                    <div className="text-xs font-semibold truncate mt-1">{course?.name}</div>
+                    <div className="text-xs font-bold truncate mt-1 leading-tight">{course?.name}</div>
                   </div>
                   {!plan.isCompleted && (
-                    <button onClick={() => onRemove(plan.course_code)} className="text-muted-foreground hover:text-destructive transition-colors p-1">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                    <Button
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onRemove(plan.course_code)} 
+                      className="h-7 w-7 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 rounded-lg -mt-1 -mr-1"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   )}
                 </div>
               </div>
@@ -396,10 +448,10 @@ function SemesterCol({
         <Button 
           variant="outline" 
           size="sm" 
-          className="mt-4 w-full h-8 text-[10px] gap-2 border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all"
+          className="mt-6 w-full h-11 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-2 border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all shadow-lg"
           onClick={() => onCommit(sem)}
         >
-          <ArrowRightCircle className="h-3 w-3" /> Enroll Planned Courses
+          <ArrowRightCircle className="h-4 w-4" /> Enroll Semester
         </Button>
       )}
     </div>
