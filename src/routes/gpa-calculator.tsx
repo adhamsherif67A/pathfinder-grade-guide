@@ -1,6 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Save, RotateCcw, Search, GraduationCap, Target, AlertCircle, CheckCircle2 } from "lucide-react";
+import { 
+  Plus, 
+  Trash2, 
+  Save, 
+  RotateCcw, 
+  Search, 
+  GraduationCap, 
+  Target, 
+  AlertCircle, 
+  CheckCircle2,
+  Settings2
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -161,7 +172,6 @@ function GpaCalculatorPage() {
       return;
     }
     setRows((rs) => {
-      // replace a trailing empty row, otherwise append
       const last = rs[rs.length - 1];
       if (last && !last.course_code && !last.course_name.trim()) {
         return [...rs.slice(0, -1), rowFromCurriculum(c)];
@@ -171,7 +181,11 @@ function GpaCalculatorPage() {
     toast.success(`Enrolled in ${c.code}`);
   };
 
-  const reset = () => setRows([emptyRow()]);
+  const reset = () => {
+    if (window.confirm("This will clear all entries from your current view. Continue?")) {
+      setRows([emptyRow()]);
+    }
+  };
 
   const save = async () => {
     if (!student) return;
@@ -200,7 +214,7 @@ function GpaCalculatorPage() {
         );
         if (insErr) throw insErr;
       }
-      toast.success("Courses saved");
+      toast.success("Academic record updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -222,288 +236,275 @@ function GpaCalculatorPage() {
   const projection = calculateRequiredGrades(totalPoints, totalCredits, targetGpa, remainingCredits);
 
   return (
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-bold text-gradient">GPA Calculator</h1>
-            <p className="text-muted-foreground text-sm">
-              Enroll in subjects from the Mechatronics curriculum and track your grades
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <GraduationCap className="h-4 w-4 mr-1" /> Enroll in subject
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl glass-strong border-white/10">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    Mechatronics Curriculum
-                    <span className="text-xs font-normal text-muted-foreground">
-                      144 Cr. Hr. · 8 Semesters · AAST × UCLAN
-                    </span>
-                  </DialogTitle>
-                </DialogHeader>
+    <div className="space-y-6 pb-20">
+      <div className="flex flex-wrap items-end justify-between gap-4 px-1">
+        <div className="flex-1 min-w-[200px]">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">GPA Calculator</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Manage your academic record and track performance</p>
+        </div>
+        
+        <div className="flex w-full sm:w-auto gap-2">
+           <Button variant="ghost" onClick={reset} size="sm" className="flex-1 sm:flex-none text-muted-foreground h-10 px-4">
+              <RotateCcw className="h-4 w-4 mr-2" /> Reset
+           </Button>
+           <Button onClick={save} disabled={saving} size="sm" className="flex-1 sm:flex-none shadow-xl h-10 px-6">
+              <Save className="h-4 w-4 mr-2" /> {saving ? "Saving..." : "Save Record"}
+           </Button>
+        </div>
+      </div>
 
-                <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search by code or name..."
-                      className="pl-8 bg-white/5 border-white/15"
-                    />
-                  </div>
-                  <Select value={filterSem} onValueChange={setFilterSem}>
-                    <SelectTrigger className="w-[160px] bg-white/5 border-white/15">
-                      <SelectValue placeholder="Semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All semesters</SelectItem>
-                      {SEMESTERS.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s.startsWith("Conc") ? s : `Semester ${s}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant={showUclanOnly ? "default" : "ghost"}
-                    onClick={() => setShowUclanOnly((v) => !v)}
-                    className="gap-1"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-[#FFC000]" />
-                    UCLAN only
+      {/* GPA & Recommendation Summary - Mobile First */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+         <div className="glass-strong rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+            <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">Current GPA</div>
+            <div className="text-6xl font-black text-gradient leading-none">{gpa.toFixed(2)}</div>
+            <div className="text-[10px] text-muted-foreground mt-3 font-mono">{totalCredits} Total Credits</div>
+         </div>
+
+         <div className={`glass-strong rounded-3xl p-5 border transition-colors ${recToneClass} md:col-span-2`}>
+            <div className="flex items-center gap-2 mb-4">
+               <div className="p-2 rounded-xl bg-white/10"><Settings2 className="h-4 w-4" /></div>
+               <h3 className="font-bold text-sm uppercase tracking-tight">Smart Recommendation</h3>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+               <div>
+                  <div className="text-lg font-bold leading-tight">{rec.label}</div>
+                  <div className="text-xs opacity-80 mt-1">Next Term: {rec.credits}</div>
+               </div>
+               <ul className="space-y-1.5 border-t sm:border-t-0 sm:border-l border-white/10 pt-3 sm:pt-0 sm:pl-4">
+                  {rec.reasons.slice(0, 3).map((r, idx) => (
+                    <li key={idx} className="text-[10px] leading-tight flex gap-2">
+                       <CheckCircle2 className="h-3 w-3 shrink-0" /> {r}
+                    </li>
+                  ))}
+               </ul>
+            </div>
+         </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[1fr_350px] gap-6 items-start">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+             <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Course Ledger</h2>
+             
+             <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 gap-2 bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground transition-all">
+                    <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Enroll from</span> Curriculum
                   </Button>
-                </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl glass-strong border-white/10 p-0 overflow-hidden">
+                   <div className="p-6">
+                    <DialogHeader className="mb-4">
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                        <GraduationCap className="h-6 w-6 text-primary" /> Mechatronics Catalog
+                      </DialogTitle>
+                    </DialogHeader>
 
-                <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-1.5">
-                  {filteredCatalog.length === 0 && (
-                    <div className="text-center text-sm text-muted-foreground py-8">
-                      No subjects match your filters.
-                    </div>
-                  )}
-                  {filteredCatalog.map((c) => {
-                    const enrolled = enrolledCodes.has(c.code);
-                    return (
-                      <div
-                        key={c.code}
-                        className={`glass rounded-lg p-3 flex items-center gap-3 ${
-                          c.uclan ? "border-l-4 border-l-[#FFC000]" : ""
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-white/10">
-                              {c.code}
-                            </span>
-                            <span className="font-medium truncate">{c.name}</span>
-                            {c.uclan && (
-                              <Badge className="bg-[#FFC000] text-black hover:bg-[#FFC000] text-[10px]">
-                                UCLAN
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {c.credits} cr · Sem {c.semester}
-                            {c.prerequisite ? ` · prereq: ${c.prerequisite}` : ""}
-                          </div>
-                        </div>
+                    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-4">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Search courses..."
+                          className="pl-10 bg-white/5 h-10 border-white/15 rounded-xl"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Select value={filterSem} onValueChange={setFilterSem}>
+                          <SelectTrigger className="w-[140px] h-10 bg-white/5 border-white/15 rounded-xl text-xs">
+                            <SelectValue placeholder="Sem" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Terms</SelectItem>
+                            {SEMESTERS.map((s) => (
+                              <SelectItem key={s} value={s}>{s.startsWith("Conc") ? s : `Sem ${s}`}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Button
-                          size="sm"
-                          variant={enrolled ? "ghost" : "default"}
-                          disabled={enrolled}
-                          onClick={() => enroll(c)}
+                          variant={showUclanOnly ? "default" : "outline"}
+                          size="icon"
+                          onClick={() => setShowUclanOnly((v) => !v)}
+                          className={`h-10 w-10 rounded-xl transition-all ${showUclanOnly ? 'bg-[#FFC000] text-black border-none' : 'border-white/15 text-muted-foreground'}`}
+                          title="Show UCLAN only"
                         >
-                          {enrolled ? "Enrolled" : "Enroll"}
+                          <GraduationCap className="h-4 w-4" />
                         </Button>
                       </div>
-                    );
-                  })}
-                </div>
-              </DialogContent>
-            </Dialog>
+                    </div>
 
-            <Button variant="ghost" onClick={reset}>
-              <RotateCcw className="h-4 w-4 mr-1" /> Reset
-            </Button>
-            <Button onClick={save} disabled={saving}>
-              <Save className="h-4 w-4 mr-1" /> {saving ? "Saving..." : "Save"}
-            </Button>
+                    <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                      {filteredCatalog.map((c) => {
+                        const enrolled = enrolledCodes.has(c.code);
+                        return (
+                          <div key={c.code} className={`glass rounded-2xl p-4 flex items-center justify-between gap-3 border transition-all ${c.uclan ? 'border-l-4 border-l-[#FFC000]' : 'border-white/5'}`}>
+                            <div className="min-w-0">
+                               <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/10">{c.code}</span>
+                                  {c.uclan && <Badge className="bg-[#FFC000] text-black text-[8px] h-3.5 border-none">UCLAN</Badge>}
+                               </div>
+                               <div className="font-bold text-sm truncate">{c.name}</div>
+                               <div className="text-[10px] text-muted-foreground mt-1">{c.credits} Cr · Semester {c.semester}</div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={enrolled ? "ghost" : "default"}
+                              disabled={enrolled}
+                              onClick={() => enroll(c)}
+                              className="rounded-xl px-4 h-9"
+                            >
+                              {enrolled ? "Enrolled" : "Enroll"}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                   </div>
+                </DialogContent>
+             </Dialog>
           </div>
-        </div>
 
-        <div className="grid lg:grid-cols-[1fr_350px] gap-6">
-          <section className="glass-strong rounded-2xl p-5">
-            {loading ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">Loading...</div>
-            ) : (
-              <>
-                <div className="hidden md:grid grid-cols-[110px_1fr_140px_110px_44px] gap-3 px-2 pb-2 text-xs uppercase tracking-wider text-muted-foreground">
-                  <div>Code</div>
-                  <div>Course</div>
-                  <div>Grade</div>
-                  <div>Credits</div>
-                  <div></div>
-                </div>
-                <div className="space-y-2">
-                  {rows.map((r, i) => (
-                    <div
-                      key={i}
-                      className={`glass rounded-xl p-3 grid md:grid-cols-[110px_1fr_140px_110px_44px] grid-cols-2 gap-3 items-center ${
-                        r.uclan ? "border-l-4 border-l-[#FFC000]" : ""
-                      }`}
-                    >
+          {loading ? (
+            <div className="text-sm text-muted-foreground py-20 text-center animate-pulse italic">Retrieving academic history...</div>
+          ) : (
+            <div className="space-y-3">
+              {rows.map((r, i) => (
+                <div key={i} className={`glass-strong rounded-3xl p-4 sm:p-5 border transition-all ${r.uclan ? 'border-l-4 border-l-[#FFC000]' : 'border-white/10 hover:border-white/20 shadow-lg'}`}>
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                    <div className="flex-1 w-full space-y-3 sm:space-y-0 sm:grid sm:grid-cols-[110px_1fr_120px_90px] sm:gap-4 items-center">
                       <Input
                         value={r.course_code}
                         onChange={(e) => update(i, { course_code: e.target.value.toUpperCase() })}
-                        placeholder="Code"
-                        className="bg-white/5 border-white/15 font-mono text-xs"
+                        placeholder="CODE"
+                        className="bg-white/5 border-white/10 font-mono text-xs h-9 rounded-xl text-primary"
                       />
-                      <div className="flex items-center gap-2 col-span-2 md:col-span-1">
+                      <div className="relative group">
                         <Input
                           value={r.course_name}
                           onChange={(e) => update(i, { course_name: e.target.value })}
                           placeholder="Course name"
-                          className="bg-white/5 border-white/15"
+                          className="bg-white/5 border-white/10 h-9 rounded-xl font-medium"
                         />
-                        {r.uclan && (
-                          <Badge className="bg-[#FFC000] text-black hover:bg-[#FFC000] text-[10px] shrink-0">
-                            UCLAN
-                          </Badge>
-                        )}
+                        {r.uclan && <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#FFC000] text-black text-[7px] h-3.5 border-none">UCLAN</Badge>}
                       </div>
-                      <Select
-                        value={r.letter_grade}
-                        onValueChange={(v) => update(i, { letter_grade: v })}
-                      >
-                        <SelectTrigger className="bg-white/5 border-white/15">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {GRADE_OPTIONS.map((g) => (
-                            <SelectItem key={g} value={g}>
-                              {g}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="number"
-                        min={1}
-                        step={0.5}
-                        value={r.credit_hours}
-                        onChange={(e) => update(i, { credit_hours: Number(e.target.value) })}
-                        className="bg-white/5 border-white/15"
-                      />
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => remove(i)}
-                        aria-label="Remove course"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2 sm:block">
+                        <div className="sm:hidden text-[9px] uppercase font-bold text-muted-foreground mb-1 ml-1">Grade</div>
+                        <Select value={r.letter_grade} onValueChange={(v) => update(i, { letter_grade: v })}>
+                          <SelectTrigger className="bg-white/5 border-white/10 h-9 rounded-xl font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GRADE_OPTIONS.map((g) => <SelectItem key={g} value={g} className="font-mono">{g}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:block">
+                        <div className="sm:hidden text-[9px] uppercase font-bold text-muted-foreground mb-1 ml-1">Credits</div>
+                        <Input
+                          type="number"
+                          min={1}
+                          step={0.5}
+                          value={r.credit_hours}
+                          onChange={(e) => update(i, { credit_hours: Number(e.target.value) })}
+                          className="bg-white/5 border-white/10 h-9 rounded-xl font-mono text-center"
+                        />
+                      </div>
                     </div>
-                  ))}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => remove(i)}
+                      className="text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 rounded-xl h-10 w-10 shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  onClick={addBlank}
-                  className="mt-3 w-full border border-dashed border-white/15"
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add blank row
-                </Button>
-              </>
-            )}
-          </section>
-
-          <aside className="space-y-6 sticky top-24 h-max">
-            <div className="glass-strong rounded-2xl p-6">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Current GPA</div>
-              <div className="text-6xl font-bold text-gradient mt-1">{gpa.toFixed(2)}</div>
-              <div className="text-sm text-muted-foreground mt-1">
-                across {totalCredits} credit hours
-              </div>
-              <div className={`glass rounded-xl p-4 border mt-5 ${recToneClass}`}>
-                <div className="text-xs uppercase tracking-wider opacity-80">Next semester</div>
-                <div className="text-sm font-semibold mt-1">{rec.label}</div>
-                <div className="text-xs opacity-80 mt-1">Suggested: {rec.credits}</div>
-                <ul className="mt-3 space-y-1 text-[11px] opacity-90">
-                  {rec.reasons.slice(0, 2).map((r, idx) => (
-                    <li key={idx}>• {r}</li>
-                  ))}
-                </ul>
-              </div>
+              ))}
+              <Button
+                variant="ghost"
+                onClick={addBlank}
+                className="w-full h-14 rounded-3xl border-2 border-dashed border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all gap-2 text-muted-foreground hover:text-primary"
+              >
+                <Plus className="h-5 w-5" /> 
+                <span className="font-bold text-xs uppercase tracking-widest">Manual Course Entry</span>
+              </Button>
             </div>
+          )}
+        </section>
 
-            <div className="glass-strong rounded-2xl p-6 border border-primary/20 bg-primary/5">
-              <div className="flex items-center gap-2 mb-4">
-                <Target className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold italic">What-If Projection</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">
-                    Target Cumulative GPA
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <Input 
-                      type="number" 
-                      min={1} 
-                      max={4} 
-                      step={0.01} 
-                      value={targetGpa}
-                      onChange={(e) => setTargetGpa(Number(e.target.value))}
-                      className="bg-white/10 border-white/20 h-10 text-lg font-bold"
-                    />
-                    <div className="text-xs text-muted-foreground">
-                      Remaining: <span className="text-foreground font-mono">{remainingCredits}</span> cr
-                    </div>
+        <aside className="space-y-6 lg:sticky lg:top-24">
+          <div className="glass-strong rounded-3xl p-6 border border-primary/20 bg-primary/5 overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
+               <Target className="h-32 w-32 rotate-12" />
+            </div>
+            
+            <div className="flex items-center gap-2 mb-6">
+              <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-lg"><Target className="h-5 w-5" /></div>
+              <h3 className="text-lg font-bold italic tracking-tight">What-If Projection</h3>
+            </div>
+            
+            <div className="space-y-5 relative z-10">
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest block mb-2 px-1">
+                  Target GPA Goal
+                </label>
+                <div className="flex items-center gap-3">
+                  <Input 
+                    type="number" 
+                    min={1} max={4} step={0.01} 
+                    value={targetGpa}
+                    onChange={(e) => setTargetGpa(Number(e.target.value))}
+                    className="bg-white/10 border-white/15 h-12 rounded-2xl text-2xl font-black text-primary px-4"
+                  />
+                  <div className="text-right">
+                    <div className="text-[9px] text-muted-foreground uppercase font-bold">Left to earn</div>
+                    <div className="text-lg font-mono font-bold">{remainingCredits} <span className="text-[10px] font-normal text-muted-foreground">Cr</span></div>
                   </div>
                 </div>
+              </div>
 
-                <div className={`glass rounded-xl p-4 border ${projection.isPossible ? 'border-primary/30 bg-primary/10' : 'border-destructive/30 bg-destructive/10'}`}>
-                  <div className="flex gap-3">
-                    {projection.isPossible ? (
-                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-                    )}
-                    <div>
-                      <div className="text-sm font-semibold leading-tight mb-1">
-                        {projection.isPossible ? 'Target Reachable' : 'Target Out of Reach'}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground leading-normal">
-                        {projection.message}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {projection.isPossible && (
-                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-tight">Required Average</div>
-                      <div className="text-xl font-black text-primary">{projection.requiredAveragePoints.toFixed(2)}</div>
-                    </div>
+              <div className={`rounded-3xl p-5 border transition-all duration-500 ${projection.isPossible ? 'bg-primary/10 border-primary/20' : 'bg-destructive/10 border-destructive/20'}`}>
+                <div className="flex gap-4">
+                  {projection.isPossible ? (
+                    <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 text-destructive shrink-0" />
                   )}
+                  <div>
+                    <div className="text-sm font-black uppercase tracking-tight mb-1">
+                      {projection.isPossible ? 'Feasible Goal' : 'Mathematical Limit'}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {projection.message}
+                    </p>
+                  </div>
                 </div>
+                
+                {projection.isPossible && (
+                  <div className="mt-5 pt-4 border-t border-white/5 flex items-end justify-between">
+                    <div>
+                       <div className="text-[9px] text-muted-foreground uppercase font-black">Maintain Average</div>
+                       <div className="text-[10px] text-primary/80 font-semibold italic">Minimum Grade: {projection.recommendedGrade}</div>
+                    </div>
+                    <div className="text-4xl font-black text-primary leading-none">{projection.requiredAveragePoints.toFixed(2)}</div>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
 
-            <div className="glass-strong rounded-2xl p-4 text-[10px] text-muted-foreground space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#FFC000]" />
-                <span>UCLAN courses (University of Central Lancashire, UK)</span>
-              </div>
-              <p>Projection assumes you complete the full 144-credit Mechatronics program.</p>
-            </div>
-          </aside>
-        </div>
+          <div className="glass-strong rounded-3xl p-5 text-[10px] text-muted-foreground space-y-3 leading-relaxed">
+             <div className="flex items-center gap-3">
+                <span className="h-2 w-2 rounded-full bg-[#FFC000] shrink-0" />
+                <span>UCLAN courses are dual-certified (UK Integration).</span>
+             </div>
+             <p className="opacity-60 italic">Calculations strictly follow AAST 4.0 grading protocols. Final year project credits are weighted as standard course hours.</p>
+          </div>
+        </aside>
       </div>
+    </div>
   );
 }
-

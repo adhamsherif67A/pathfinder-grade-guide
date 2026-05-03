@@ -99,16 +99,16 @@ function RoadmapPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-1">
         <div>
-          <h1 className="text-3xl font-bold text-gradient">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">
             {targetStudent ? `Roadmap: ${targetStudent.name}` : "Academic Roadmap"}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm">
             Visualizing the 144-credit Mechatronics journey (AAST x UCLAN)
           </p>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-2 glass p-3 rounded-xl border-white/10">
+        <div className="flex flex-wrap gap-x-4 gap-y-3 glass p-4 rounded-2xl border-white/10 shadow-lg">
           <LegendItem icon={CheckCircle2} label="Passed" color="text-emerald-400" />
           <LegendItem icon={Compass} label="Enrolled" color="text-amber-400" />
           <LegendItem icon={Flag} label="Planned" color="text-primary" />

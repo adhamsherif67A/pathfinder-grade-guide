@@ -7,6 +7,7 @@ import {
   LogOut,
   Map,
   Users,
+  User as UserIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -91,19 +92,34 @@ export function AppShell({
     return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "U";
   }, [student?.full_name, profile?.full_name]);
 
-  const navItem = (to: string, label: string, Icon: typeof Calculator) => {
+  const navItem = (to: string, label: string, Icon: any) => {
     const active = path === to;
     return (
       <Link
         to={to}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
           active
-            ? "bg-primary/20 text-primary border border-primary/30"
-            : "text-foreground/80 hover:text-foreground hover:bg-white/5"
+            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105"
+            : "text-foreground/70 hover:text-foreground hover:bg-white/5"
         }`}
       >
         <Icon className="h-4 w-4" />
-        <span className="hidden sm:inline">{label}</span>
+        <span className="hidden lg:inline">{label}</span>
+      </Link>
+    );
+  };
+
+  const mobileNavItem = (to: string, label: string, Icon: any) => {
+    const active = path === to;
+    return (
+      <Link
+        to={to}
+        className={`flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all ${
+          active ? "text-primary scale-110" : "text-muted-foreground"
+        }`}
+      >
+        <Icon className={`${active ? "h-6 w-6" : "h-5 w-5"}`} />
+        <span className="text-[10px] font-bold uppercase tracking-tighter">{label}</span>
       </Link>
     );
   };
@@ -113,17 +129,18 @@ export function AppShell({
   const showHeader = !!profile;
   const titleLine =
     role === "student"
-      ? `${student?.full_name || "Student"}${student?.registration_number ? ` · ${student.registration_number}` : ""}`
+      ? `${student?.full_name || "Student"}`
       : role === "advisor"
-        ? `Advisor: ${profile?.full_name || "Academic Staff"}`
+        ? `Advisor: ${profile?.full_name || "Staff"}`
         : "";
 
   return (
     <AppContextProvider value={{ loading, profile, student, role, refresh }}>
-      <div className="relative min-h-screen w-full overflow-x-hidden">
+      <div className="relative min-h-screen w-full flex flex-col bg-background">
+        {/* Decorative Background */}
         <div
           className="fixed inset-0 -z-20 bg-center bg-cover"
-          style={{ backgroundImage: `url(${campusBg})`, opacity: 0.55 }}
+          style={{ backgroundImage: `url(${campusBg})`, opacity: 0.4 }}
           aria-hidden
         />
         <div
@@ -132,74 +149,86 @@ export function AppShell({
           aria-hidden
         />
 
-        <div className="fixed top-3 right-3 z-30 flex items-center gap-2 glass rounded-2xl px-3 py-2">
-          <img
-            src={engLogo}
-            alt="College of Engineering & Technology"
-            className="h-10 w-10 rounded-md object-cover"
-          />
-          <img
-            src={aastLogo}
-            alt="AAST"
-            className="h-10 w-auto object-contain bg-white/90 rounded-md px-1"
-          />
-        </div>
-
+        {/* Desktop Header & Identity */}
         {showHeader && (
-          <header className="sticky top-0 z-20 w-full">
-            <div className="mx-auto max-w-7xl px-4 py-3 mt-2 mr-44 sm:mr-48">
-              <div className="glass-strong rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3">
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-3 min-w-0"
-                >
-                  <img
-                    src={edupathLogo}
-                    alt="EduPath"
-                    className="h-9 w-9 rounded-xl bg-white/90 object-contain p-1 shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold leading-tight truncate">
-                      EduPath Analytics
-                    </div>
-                    <div className="text-[11px] text-muted-foreground leading-tight truncate">
-                      {titleLine}
-                    </div>
+          <header className="sticky top-0 z-30 w-full hidden md:block border-b border-white/5 bg-background/50 backdrop-blur-xl">
+            <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Link to="/dashboard" className="flex items-center gap-3">
+                  <img src={edupathLogo} alt="Logo" className="h-10 w-10 rounded-xl bg-white p-1" />
+                  <div>
+                    <div className="text-sm font-bold">EduPath Analytics</div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-semibold">{titleLine}</div>
                   </div>
                 </Link>
+              </div>
 
-                <nav className="flex items-center gap-1">
-                  {role === 'advisor' && navItem("/advisor", "Students", Users)}
-                  {navItem("/dashboard", "Dashboard", LayoutDashboard)}
-                  {navItem("/roadmap", "Roadmap", Compass)}
-                  {navItem("/degree-planner", "Planner", Map)}
-                  {navItem("/gpa-calculator", "Calculator", Calculator)}
-                  
-                  <div className="ml-1 flex items-center gap-2 px-2 py-2 text-sm" title="Profile">
-                    <Avatar className="h-7 w-7 border border-white/20">
-                      <AvatarImage alt={student?.full_name || profile?.full_name || "User"} />
-                      <AvatarFallback className="text-[10px] bg-primary/20 text-primary">{initials}</AvatarFallback>
-                    </Avatar>
-                  </div>
+              <nav className="flex items-center gap-2 p-1 bg-white/5 rounded-2xl border border-white/5">
+                {role === 'advisor' && navItem("/advisor", "Directory", Users)}
+                {navItem("/dashboard", "Summary", LayoutDashboard)}
+                {navItem("/roadmap", "Roadmap", Compass)}
+                {navItem("/degree-planner", "Planner", Map)}
+                {navItem("/gpa-calculator", "Calculator", Calculator)}
+              </nav>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={logout}
-                    className="text-foreground/80 hover:text-foreground"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">Logout</span>
-                  </Button>
-                </nav>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-9 w-9 border-2 border-primary/20">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <Button variant="ghost" size="sm" onClick={logout} className="rounded-xl gap-2 hover:bg-destructive/10 hover:text-destructive">
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </Button>
               </div>
             </div>
           </header>
         )}
 
-        <main className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-6">{children}</main>
+        {/* Mobile Header (Identity Only) */}
+        {showHeader && (
+          <div className="md:hidden flex items-center justify-between p-4 bg-background/50 backdrop-blur-md sticky top-0 z-30 border-b border-white/5">
+            <div className="flex items-center gap-2">
+               <img src={edupathLogo} alt="Logo" className="h-8 w-8 rounded-lg bg-white p-1" />
+               <span className="font-bold text-sm">EduPath</span>
+            </div>
+            <div className="flex items-center gap-3">
+               <span className="text-[10px] font-bold text-primary truncate max-w-[120px]">{titleLine}</span>
+               <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8"><LogOut className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <main className={`flex-1 relative z-10 mx-auto w-full max-w-7xl px-4 pt-6 ${showHeader ? 'pb-24 md:pb-12' : 'pb-12'}`}>
+          {children}
+        </main>
+
+        {/* Mobile Bottom Navigation Bar */}
+        {showHeader && (
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-2xl border-t border-white/10 px-2 pb-safe-offset-2 pt-1 flex items-center justify-around shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
+            {role === 'advisor' ? (
+               <>
+                 {mobileNavItem("/advisor", "Roster", Users)}
+                 {mobileNavItem("/dashboard", "Stats", LayoutDashboard)}
+                 {mobileNavItem("/roadmap", "Map", Compass)}
+               </>
+            ) : (
+               <>
+                 {mobileNavItem("/dashboard", "Home", LayoutDashboard)}
+                 {mobileNavItem("/roadmap", "Roadmap", Compass)}
+                 {mobileNavItem("/degree-planner", "Planner", Map)}
+                 {mobileNavItem("/gpa-calculator", "Calc", Calculator)}
+               </>
+            )}
+          </nav>
+        )}
+
+        {/* Top Right Logos (Floating) */}
+        <div className="fixed top-4 right-4 z-40 hidden xl:flex items-center gap-2 glass rounded-2xl p-2 opacity-80 hover:opacity-100 transition-opacity">
+           <img src={aastLogo} className="h-8 w-auto bg-white rounded p-1" />
+           <img src={engLogo} className="h-8 w-8 rounded object-cover" />
+        </div>
       </div>
     </AppContextProvider>
   );
 }
-
