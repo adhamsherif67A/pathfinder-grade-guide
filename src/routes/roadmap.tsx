@@ -18,6 +18,11 @@ import { getCourseRoadmap, type PlannedCourse, type RoadmapCourse } from "@/lib/
 
 export const Route = createFileRoute("/roadmap")({
   component: RoadmapRoute,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      studentId: (search.studentId as string) || undefined,
+    };
+  },
 });
 
 function RoadmapRoute() {
@@ -29,39 +34,65 @@ function RoadmapRoute() {
 }
 
 function RoadmapPage() {
-  const { student, loading: ctxLoading } = useAppContext();
-  const [completedCodes, setCompletedCodes] = useState<Set<string>>(new Set());
+  const { student: currentStudent, loading: ctxLoading } = useAppContext();
+  const { studentId } = Route.useSearch();
+  
+  const [targetStudent, setTargetStudent] = useState<{ id: string, name: string } | null>(null);
+  const [passedCodes, setPassedCodes] = useState<Set<string>>(new Set());
+  const [enrolledCodes, setEnrolledCodes] = useState<Set<string>>(new Set());
   const [plannedCourses, setPlannedCourses] = useState<PlannedCourse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (ctxLoading || !student) return;
+    if (ctxLoading) return;
+    
+    const idToLoad = studentId || currentStudent?.id;
+    if (!idToLoad) {
+      setLoading(false);
+      return;
+    }
 
     async function loadData() {
+      setLoading(true);
+      // 1) Fetch student name if it's an external ID
+      if (studentId) {
+        const { data: sData } = await supabase.from("students").select("full_name").eq("id", studentId).maybeSingle();
+        if (sData) setTargetStudent({ id: studentId, name: sData.full_name });
+      } else if (currentStudent) {
+        setTargetStudent({ id: currentStudent.id, name: currentStudent.full_name });
+      }
+
+      // 2) Fetch academic record
       const { data } = await supabase
         .from("courses")
-        .select("course_code")
-        .eq("student_id", student.id)
-        .not("letter_grade", "eq", "F");
+        .select("course_code, letter_grade")
+        .eq("student_id", idToLoad);
 
       if (data) {
-        const codes = new Set(data.map(d => (d.course_code || "").trim().toUpperCase()).filter(Boolean));
-        setCompletedCodes(codes);
+        const passed = new Set<string>();
+        const enrolled = new Set<string>();
+        data.forEach(d => {
+          const code = (d.course_code || "").trim().toUpperCase();
+          if (code) {
+            enrolled.add(code);
+            if (d.letter_grade !== "F") passed.add(code);
+          }
+        });
+        setPassedCodes(passed);
+        setEnrolledCodes(enrolled);
       }
       
-      const savedPlan = localStorage.getItem(`plan_${student.id}`);
-      if (savedPlan) {
-        setPlannedCourses(JSON.parse(savedPlan));
-      }
+      const savedPlan = localStorage.getItem(`plan_${idToLoad}`);
+      if (savedPlan) setPlannedCourses(JSON.parse(savedPlan));
       setLoading(false);
     }
 
     void loadData();
-  }, [student, ctxLoading]);
+  }, [studentId, currentStudent, ctxLoading]);
 
   const roadmap = useMemo(() => 
-    getCourseRoadmap(completedCodes, plannedCourses), 
-    [completedCodes, plannedCourses]
+    getCourseRoadmap(passedCodes, enrolledCodes, plannedCourses), 
+    [passedCodes, enrolledCodes, plannedCourses]
   );
 
   if (loading) return <div className="text-center py-20 text-muted-foreground italic">Generating Visual Roadmap...</div>;
@@ -70,13 +101,16 @@ function RoadmapPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gradient">Academic Roadmap</h1>
+          <h1 className="text-3xl font-bold text-gradient">
+            {targetStudent ? `Roadmap: ${targetStudent.name}` : "Academic Roadmap"}
+          </h1>
           <p className="text-muted-foreground text-sm">
             Visualizing the 144-credit Mechatronics journey (AAST x UCLAN)
           </p>
         </div>
-        <div className="flex gap-4 glass p-3 rounded-xl border-white/10">
-          <LegendItem icon={CheckCircle2} label="Completed" color="text-emerald-400" />
+        <div className="flex flex-wrap gap-x-4 gap-y-2 glass p-3 rounded-xl border-white/10">
+          <LegendItem icon={CheckCircle2} label="Passed" color="text-emerald-400" />
+          <LegendItem icon={Compass} label="Enrolled" color="text-amber-400" />
           <LegendItem icon={Flag} label="Planned" color="text-primary" />
           <LegendItem icon={Unlock} label="Unlocked" color="text-sky-400" />
           <LegendItem icon={Lock} label="Locked" color="text-muted-foreground/40" />
@@ -110,6 +144,7 @@ function RoadmapPage() {
 
 function RoadmapCard({ course }: { course: RoadmapCourse }) {
   const isCompleted = course.status === "completed";
+  const isEnrolled = course.status === "enrolled";
   const isPlanned = course.status === "planned";
   const isUnlocked = course.status === "unlocked";
   const isLocked = course.status === "locked";
@@ -117,6 +152,7 @@ function RoadmapCard({ course }: { course: RoadmapCourse }) {
   return (
     <div className={`glass-strong rounded-2xl p-4 border transition-all duration-500 relative group ${
       isCompleted ? "border-emerald-500/40 bg-emerald-500/5" :
+      isEnrolled ? "border-amber-500/40 bg-amber-500/5" :
       isPlanned ? "border-primary/40 bg-primary/5 shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.1)]" :
       isUnlocked ? "border-sky-500/30 bg-sky-500/5" :
       "border-white/5 opacity-50 grayscale"
@@ -124,6 +160,7 @@ function RoadmapCard({ course }: { course: RoadmapCourse }) {
       <div className="flex justify-between items-start mb-2">
         <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">{course.code}</span>
         {isCompleted && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+        {isEnrolled && <Compass className="h-4 w-4 text-amber-400" />}
         {isPlanned && <Flag className="h-4 w-4 text-primary" />}
         {isUnlocked && <Unlock className="h-4 w-4 text-sky-400" />}
         {isLocked && <Lock className="h-4 w-4 text-muted-foreground/40" />}

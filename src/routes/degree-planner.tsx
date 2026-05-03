@@ -32,43 +32,44 @@ function DegreePlannerRoute() {
 }
 
 function DegreePlannerPage() {
-  const { student, loading: ctxLoading } = useAppContext();
-  const [completedCodes, setCompletedCodes] = useState<Set<string>>(new Set());
+  const { student, loading: ctxLoading, refresh } = useAppContext();
+  const [passedCodes, setPassedCodes] = useState<Set<string>>(new Set());
+  const [enrolledCodes, setEnrolledCodes] = useState<Set<string>>(new Set());
   const [plannedCourses, setPlannedCourses] = useState<PlannedCourse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCommitting, setIsCommitting] = useState(false);
 
   useEffect(() => {
     if (ctxLoading) return;
-    
-    if (!student) {
-      setLoading(false);
-      return;
-    }
+    if (!student) { setLoading(false); return; }
 
     async function loadData() {
       try {
         const { data } = await supabase
           .from("courses")
-          .select("course_code")
-          .eq("student_id", student.id)
-          .not("letter_grade", "eq", "F");
+          .select("course_code, letter_grade")
+          .eq("student_id", student.id);
 
         if (data) {
-          const codes = new Set(data.map(d => (d.course_code || "").trim().toUpperCase()).filter(Boolean));
-          setCompletedCodes(codes);
-        } else {
-          setCompletedCodes(new Set());
+          const passed = new Set<string>();
+          const enrolled = new Set<string>();
+          data.forEach(d => {
+            const code = (d.course_code || "").trim().toUpperCase();
+            if (code) {
+              enrolled.add(code);
+              if (d.letter_grade !== "F") passed.add(code);
+            }
+          });
+          setPassedCodes(passed);
+          setEnrolledCodes(enrolled);
         }
         
         const savedPlan = localStorage.getItem(`plan_${student.id}`);
-        if (savedPlan) {
-          setPlannedCourses(JSON.parse(savedPlan));
-        }
+        if (savedPlan) setPlannedCourses(JSON.parse(savedPlan));
       } finally {
         setLoading(false);
       }
     }
-
     void loadData();
   }, [student, ctxLoading]);
 
@@ -79,8 +80,8 @@ function DegreePlannerPage() {
   }, [plannedCourses, student, loading]);
 
   const violations = useMemo(() => 
-    validateDegreePlan(completedCodes, plannedCourses), 
-    [completedCodes, plannedCourses]
+    validateDegreePlan(passedCodes, plannedCourses), 
+    [passedCodes, plannedCourses]
   );
 
   const violationMap = useMemo(() => {
@@ -95,21 +96,20 @@ function DegreePlannerPage() {
 
   const nextSemesterToPlan = useMemo(() => {
     const completedSems = new Set<string>();
-    completedCodes.forEach(code => {
+    enrolledCodes.forEach(code => {
       const sem = CURRICULUM_BY_CODE[code]?.semester;
       if (sem) completedSems.add(sem);
     });
-
     for (const sem of ["1", "2", "3", "4", "5", "6", "7", "8"]) {
       if (!completedSems.has(sem)) return sem;
     }
     return "Conc. 1";
-  }, [completedCodes]);
+  }, [enrolledCodes]);
 
   const addToPlan = (course_code: string, semester: string) => {
     const code = course_code.trim().toUpperCase();
-    if (completedCodes.has(code)) {
-      toast.error("You have already completed this course.");
+    if (enrolledCodes.has(code)) {
+      toast.error("This course is already in your GPA Calculator.");
       return;
     }
     if (plannedCourses.some(p => p.course_code === code)) {
@@ -118,6 +118,52 @@ function DegreePlannerPage() {
     }
     setPlannedCourses(prev => [...prev, { course_code: code, semester }]);
     toast.success(`Added to Sem ${semester}`);
+  };
+
+  const commitTerm = async (semester: string) => {
+    if (!student) return;
+    const termPlanned = plannedCourses.filter(p => p.semester === semester);
+    if (termPlanned.length === 0) {
+      toast.info("No courses planned for this semester to commit.");
+      return;
+    }
+
+    const confirm = window.confirm(`Move all ${termPlanned.length} courses from Sem ${semester} to your GPA Calculator?`);
+    if (!confirm) return;
+
+    setIsCommitting(true);
+    try {
+      const toInsert = termPlanned.map(p => {
+        const cur = CURRICULUM_BY_CODE[p.course_code];
+        return {
+          student_id: student.id,
+          course_code: p.course_code,
+          course_name: cur?.name || p.course_code,
+          letter_grade: "A", // Default to A
+          credit_hours: cur?.credits || 3
+        };
+      });
+
+      const { error } = await supabase.from("courses").insert(toInsert as never);
+      if (error) throw error;
+
+      // Remove from plan
+      setPlannedCourses(prev => prev.filter(p => p.semester !== semester));
+      
+      // Update local enrolled set to prevent re-adding
+      setEnrolledCodes(prev => {
+        const next = new Set(prev);
+        termPlanned.forEach(p => next.add(p.course_code));
+        return next;
+      });
+
+      toast.success(`Semester ${semester} committed to Calculator!`);
+      if (refresh) void refresh();
+    } catch (err) {
+      toast.error("Failed to commit semester.");
+    } finally {
+      setIsCommitting(false);
+    }
   };
 
   const removeFromPlan = (course_code: string) => {
@@ -129,7 +175,7 @@ function DegreePlannerPage() {
     toast.success("Planner cleared");
   };
 
-  if (loading) return <div className="text-center py-20 text-muted-foreground italic">Syncing with GPA Calculator...</div>;
+  if (loading) return <div className="text-center py-20 text-muted-foreground italic">Syncing Academic Record...</div>;
 
   if (!student) {
     return (
@@ -240,6 +286,7 @@ function DegreePlannerPage() {
                   courses={[...semCompleted, ...semPlanned.map(p => ({ ...p, isCompleted: false }))]}
                   violationMap={violationMap}
                   onRemove={removeFromPlan}
+                  onCommit={commitTerm}
                   isRecommended={semNum === nextSemesterToPlan}
                 />
               );
@@ -282,12 +329,14 @@ function SemesterCol({
   courses, 
   violationMap,
   onRemove,
+  onCommit,
   isRecommended
 }: { 
   sem: string; 
   courses: (PlannedCourse & { isCompleted: boolean })[]; 
   violationMap: Map<string, PrerequisiteViolation[]>;
   onRemove: (code: string) => void;
+  onCommit: (sem: string) => void;
   isRecommended?: boolean;
 }) {
   return (
@@ -342,6 +391,17 @@ function SemesterCol({
           })
         )}
       </div>
+
+      {!courses.every(c => c.isCompleted) && courses.some(c => !c.isCompleted) && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="mt-4 w-full h-8 text-[10px] gap-2 border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all"
+          onClick={() => onCommit(sem)}
+        >
+          <ArrowRightCircle className="h-3 w-3" /> Enroll Planned Courses
+        </Button>
+      )}
     </div>
   );
 }

@@ -12,7 +12,8 @@ import {
   GraduationCap,
   ClipboardCheck,
   XCircle,
-  PlusCircle
+  PlusCircle,
+  Compass
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -316,15 +317,16 @@ function AdvisorDashboard() {
 
             {selectedStudent && (
               <div className="space-y-6 py-4">
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div className="glass rounded-2xl p-4 border border-white/5">
-                    <div className="text-[10px] uppercase text-muted-foreground mb-1">GPA</div>
-                    <div className="text-2xl font-bold">{selectedStudent.gpa.toFixed(2)}</div>
-                  </div>
-                  <div className="glass rounded-2xl p-4 border border-white/5">
-                    <div className="text-[10px] uppercase text-muted-foreground mb-1">Credits</div>
-                    <div className="text-2xl font-bold">{selectedStudent.credits}</div>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-3 border-sky-500/20 text-sky-400 hover:bg-sky-500/10"
+                    asChild
+                  >
+                    <Link to="/roadmap" search={{ studentId: selectedStudent.id }}>
+                      <Compass className="h-4 w-4" /> View Visual Roadmap
+                    </Link>
+                  </Button>
                 </div>
 
                 <section className="glass rounded-2xl p-4 border border-primary/20 bg-primary/5">

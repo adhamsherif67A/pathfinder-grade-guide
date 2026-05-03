@@ -62,7 +62,7 @@ export function validateDegreePlan(
   return violations;
 }
 
-export type CourseStatus = "completed" | "planned" | "unlocked" | "locked";
+export type CourseStatus = "completed" | "enrolled" | "planned" | "unlocked" | "locked";
 
 export type RoadmapCourse = CurriculumCourse & {
   status: CourseStatus;
@@ -72,7 +72,8 @@ export type RoadmapCourse = CurriculumCourse & {
  * Calculates the roadmap status for all courses in the curriculum.
  */
 export function getCourseRoadmap(
-  completedCourseCodes: Set<string>,
+  passedCourseCodes: Set<string>,
+  enrolledCourseCodes: Set<string>,
   plannedCourses: PlannedCourse[]
 ): RoadmapCourse[] {
   const plannedSet = new Set(plannedCourses.map(p => p.course_code.toUpperCase()));
@@ -80,8 +81,12 @@ export function getCourseRoadmap(
   return CURRICULUM.map(course => {
     const code = course.code.toUpperCase();
     
-    if (completedCourseCodes.has(code)) {
+    if (passedCourseCodes.has(code)) {
       return { ...course, status: "completed" as CourseStatus };
+    }
+
+    if (enrolledCourseCodes.has(code)) {
+      return { ...course, status: "enrolled" as CourseStatus };
     }
     
     if (plannedSet.has(code)) {
@@ -95,8 +100,8 @@ export function getCourseRoadmap(
     
     const prereqs = course.prerequisite.split('&').map(s => s.trim().toUpperCase());
     const isUnlocked = prereqs.every(p => {
-      if (p.includes('CR. HR.')) return true; // Simple bypass for credit hour checks
-      return completedCourseCodes.has(p);
+      if (p.includes('CR. HR.')) return true;
+      return passedCourseCodes.has(p);
     });
     
     return { 
