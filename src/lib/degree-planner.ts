@@ -18,13 +18,13 @@ export type PrerequisiteViolation = {
  */
 export function validateDegreePlan(
   completedCourseCodes: Set<string>,
-  plannedCourses: PlannedCourse[]
+  plannedCourses: PlannedCourse[],
 ): PrerequisiteViolation[] {
   const violations: PrerequisiteViolation[] = [];
-  
+
   // Sort planned courses by semester to check prerequisites chronologically
   const sortedPlan = [...plannedCourses].sort((a, b) => Number(a.semester) - Number(b.semester));
-  
+
   // Track what will be "available" as we iterate through the plan
   const currentlyAvailable = new Set(completedCourseCodes);
 
@@ -37,20 +37,20 @@ export function validateDegreePlan(
 
     // Handle complex prerequisites (e.g., "EBA1104 & EBA1402" or "30 Cr. Hr.")
     const prereqStr = course.prerequisite;
-    
-    // Simple split by '&' for now. For "30 Cr. Hr." we'd need more logic, 
+
+    // Simple split by '&' for now. For "30 Cr. Hr." we'd need more logic,
     // but we'll focus on course-to-course dependencies first.
-    const individualPrereqs = prereqStr.split('&').map(s => s.trim());
-    
+    const individualPrereqs = prereqStr.split("&").map((s) => s.trim());
+
     for (const prereq of individualPrereqs) {
       // Skip credit hour requirements for this simple version
-      if (prereq.toLowerCase().includes('cr. hr.')) continue;
-      
+      if (prereq.toLowerCase().includes("cr. hr.")) continue;
+
       if (!currentlyAvailable.has(prereq)) {
         violations.push({
           course_code: plan.course_code,
           prerequisite: prereq,
-          message: `${course.name} (${plan.course_code}) requires ${prereq}, which is not yet completed or planned in a previous term.`
+          message: `${course.name} (${plan.course_code}) requires ${prereq}, which is not yet completed or planned in a previous term.`,
         });
       }
     }
@@ -74,13 +74,13 @@ export type RoadmapCourse = CurriculumCourse & {
 export function getCourseRoadmap(
   passedCourseCodes: Set<string>,
   enrolledCourseCodes: Set<string>,
-  plannedCourses: PlannedCourse[]
+  plannedCourses: PlannedCourse[],
 ): RoadmapCourse[] {
-  const plannedSet = new Set(plannedCourses.map(p => p.course_code.toUpperCase()));
-  
-  return CURRICULUM.map(course => {
+  const plannedSet = new Set(plannedCourses.map((p) => p.course_code.toUpperCase()));
+
+  return CURRICULUM.map((course) => {
     const code = course.code.toUpperCase();
-    
+
     if (passedCourseCodes.has(code)) {
       return { ...course, status: "completed" as CourseStatus };
     }
@@ -88,25 +88,25 @@ export function getCourseRoadmap(
     if (enrolledCourseCodes.has(code)) {
       return { ...course, status: "enrolled" as CourseStatus };
     }
-    
+
     if (plannedSet.has(code)) {
       return { ...course, status: "planned" as CourseStatus };
     }
-    
+
     // Check if unlocked (all prerequisites met by COMPLETED courses)
     if (!course.prerequisite) {
       return { ...course, status: "unlocked" as CourseStatus };
     }
-    
-    const prereqs = course.prerequisite.split('&').map(s => s.trim().toUpperCase());
-    const isUnlocked = prereqs.every(p => {
-      if (p.includes('CR. HR.')) return true;
+
+    const prereqs = course.prerequisite.split("&").map((s) => s.trim().toUpperCase());
+    const isUnlocked = prereqs.every((p) => {
+      if (p.includes("CR. HR.")) return true;
       return passedCourseCodes.has(p);
     });
-    
-    return { 
-      ...course, 
-      status: (isUnlocked ? "unlocked" : "locked") as CourseStatus 
+
+    return {
+      ...course,
+      status: (isUnlocked ? "unlocked" : "locked") as CourseStatus,
     };
   });
 }

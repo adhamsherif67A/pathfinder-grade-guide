@@ -32,8 +32,8 @@ function LoginPage() {
       if (!user) return;
       const profile = await getAppProfile(user.id);
       if (!profile) return;
-      
-      if (profile.role === 'advisor') {
+
+      if (profile.role === "advisor") {
         navigate({ to: "/advisor" });
       } else {
         navigate({ to: "/dashboard" });
@@ -44,8 +44,8 @@ function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    if (role === 'advisor') {
+
+    if (role === "advisor") {
       const isValidAdvisorId = /^eng\d+$/i.test(reg.trim());
       if (!isValidAdvisorId) {
         toast.error("Advisor ID must start with 'eng' followed by numbers (e.g. eng1234)");
@@ -56,15 +56,15 @@ function LoginPage() {
 
     try {
       await signInDirectly({
-        email: role === 'advisor' ? `${reg.trim().toLowerCase()}@advisor.aast.edu` : email,
+        email: role === "advisor" ? `${reg.trim().toLowerCase()}@advisor.aast.edu` : email,
         registration_number: reg,
         full_name: name,
         role,
         enrollment_year: enrollmentYear === "" ? undefined : Number(enrollmentYear),
       });
       toast.success(`Welcome back, ${role}!`);
-      
-      if (role === 'advisor') {
+
+      if (role === "advisor") {
         navigate({ to: "/advisor" });
       } else {
         navigate({ to: "/dashboard" });
@@ -84,15 +84,21 @@ function LoginPage() {
         <div className="w-full max-w-md glass-strong rounded-3xl p-8 animate-in fade-in zoom-in-95 duration-500">
           <div className="flex flex-col items-center text-center mb-6">
             <div className="h-14 w-14 mb-3">
-              <img src={edupathLogo} alt="EduPath" className="h-14 w-14 rounded-2xl object-contain bg-white/90 p-1 shadow-lg" />
+              <img
+                src={edupathLogo}
+                alt="EduPath"
+                className="h-14 w-14 rounded-2xl object-contain bg-white/90 p-1 shadow-lg"
+              />
             </div>
             <h1 className="text-2xl font-bold text-gradient">EduPath Analytics</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Academic Advising Portal
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">Academic Advising Portal</p>
           </div>
 
-          <Tabs defaultValue="student" onValueChange={(v) => setRole(v as AppRole)} className="mb-6">
+          <Tabs
+            defaultValue="student"
+            onValueChange={(v) => setRole(v as AppRole)}
+            className="mb-6"
+          >
             <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10">
               <TabsTrigger value="student" className="gap-2">
                 <GraduationCap className="h-4 w-4" /> Student
@@ -104,7 +110,7 @@ function LoginPage() {
           </Tabs>
 
           <form onSubmit={submit} className="space-y-4">
-            {role === 'student' && (
+            {role === "student" && (
               <div className="space-y-2">
                 <Label htmlFor="email">College Email</Label>
                 <Input
@@ -112,34 +118,38 @@ function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. name@student.aast.edu"
-                  required={role === 'student'}
+                  required={role === "student"}
                   className="bg-white/5 border-white/15"
                   autoComplete="email"
                 />
               </div>
             )}
 
-            <div className={`grid ${role === 'student' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+            <div className={`grid ${role === "student" ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
               <div className="space-y-2">
-                <Label htmlFor="reg">{role === 'student' ? 'Registration #' : 'Advisor ID (engXXXX)'}</Label>
+                <Label htmlFor="reg">
+                  {role === "student" ? "Registration #" : "Advisor ID (engXXXX)"}
+                </Label>
                 <Input
                   id="reg"
                   value={reg}
                   onChange={(e) => setReg(e.target.value)}
-                  placeholder={role === 'student' ? "e.g. 22102345" : "e.g. eng1234"}
+                  placeholder={role === "student" ? "e.g. 22102345" : "e.g. eng1234"}
                   required
                   className="bg-white/5 border-white/15"
                   autoComplete="username"
                 />
               </div>
-              {role === 'student' && (
+              {role === "student" && (
                 <div className="space-y-2">
                   <Label htmlFor="year">Enrollment year</Label>
                   <Input
                     id="year"
                     type="number"
                     value={enrollmentYear}
-                    onChange={(e) => setEnrollmentYear(e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) =>
+                      setEnrollmentYear(e.target.value ? Number(e.target.value) : "")
+                    }
                     placeholder="e.g. 2023"
                     className="bg-white/5 border-white/15"
                   />
@@ -153,7 +163,7 @@ function LoginPage() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={role === 'student' ? "e.g. Ahmed Hassan" : "e.g. Dr. Ahmed Hassan"}
+                placeholder={role === "student" ? "e.g. Ahmed Hassan" : "e.g. Dr. Ahmed Hassan"}
                 required
                 className="bg-white/5 border-white/15"
                 autoComplete="name"
@@ -173,4 +183,3 @@ function LoginPage() {
     </AppShell>
   );
 }
-

@@ -11,7 +11,7 @@ export function calculateRequiredGrades(
   currentTotalPoints: number,
   currentTotalCredits: number,
   targetGpa: number,
-  remainingCredits: number
+  remainingCredits: number,
 ): ProjectionResult {
   if (remainingCredits <= 0) {
     const currentGpa = currentTotalCredits > 0 ? currentTotalPoints / currentTotalCredits : 0;
@@ -19,7 +19,10 @@ export function calculateRequiredGrades(
       requiredAveragePoints: 0,
       recommendedGrade: "N/A",
       isPossible: currentGpa >= targetGpa,
-      message: currentGpa >= targetGpa ? "Target already achieved!" : "Target impossible (no credits remaining)."
+      message:
+        currentGpa >= targetGpa
+          ? "Target already achieved!"
+          : "Target impossible (no credits remaining).",
     };
   }
 
@@ -32,7 +35,7 @@ export function calculateRequiredGrades(
       requiredAveragePoints: requiredAverage,
       recommendedGrade: "A+",
       isPossible: false,
-      message: `Impossible: You need an average of ${requiredAverage.toFixed(2)} (max is 4.0).`
+      message: `Impossible: You need an average of ${requiredAverage.toFixed(2)} (max is 4.0).`,
     };
   }
 
@@ -41,7 +44,7 @@ export function calculateRequiredGrades(
       requiredAveragePoints: 0,
       recommendedGrade: "D",
       isPossible: true,
-      message: "Target guaranteed: Even with minimum passing grades, you will hit your goal."
+      message: "Target guaranteed: Even with minimum passing grades, you will hit your goal.",
     };
   }
 
@@ -59,6 +62,6 @@ export function calculateRequiredGrades(
     requiredAveragePoints: requiredAverage,
     recommendedGrade,
     isPossible: true,
-    message: `To hit ${targetGpa.toFixed(2)}, you need an average of ${requiredAverage.toFixed(2)} (${recommendedGrade}) in your remaining credits.`
+    message: `To hit ${targetGpa.toFixed(2)}, you need an average of ${requiredAverage.toFixed(2)} (${recommendedGrade}) in your remaining credits.`,
   };
 }

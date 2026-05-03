@@ -1,14 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { 
-  CheckCircle2, 
-  Lock, 
-  Unlock, 
-  Flag, 
-  Info,
-  Calendar,
-  Compass
-} from "lucide-react";
+import { CheckCircle2, Lock, Unlock, Flag, Info, Calendar, Compass } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { useAppContext } from "@/lib/app-context";
@@ -36,8 +28,8 @@ function RoadmapRoute() {
 function RoadmapPage() {
   const { student: currentStudent, loading: ctxLoading } = useAppContext();
   const { studentId } = Route.useSearch();
-  
-  const [targetStudent, setTargetStudent] = useState<{ id: string, name: string } | null>(null);
+
+  const [targetStudent, setTargetStudent] = useState<{ id: string; name: string } | null>(null);
   const [passedCodes, setPassedCodes] = useState<Set<string>>(new Set());
   const [enrolledCodes, setEnrolledCodes] = useState<Set<string>>(new Set());
   const [plannedCourses, setPlannedCourses] = useState<PlannedCourse[]>([]);
@@ -45,7 +37,7 @@ function RoadmapPage() {
 
   useEffect(() => {
     if (ctxLoading) return;
-    
+
     const idToLoad = studentId || currentStudent?.id;
     if (!idToLoad) {
       setLoading(false);
@@ -56,7 +48,11 @@ function RoadmapPage() {
       setLoading(true);
       // 1) Fetch student name if it's an external ID
       if (studentId) {
-        const { data: sData } = await supabase.from("students").select("full_name").eq("id", studentId).maybeSingle();
+        const { data: sData } = await supabase
+          .from("students")
+          .select("full_name")
+          .eq("id", studentId)
+          .maybeSingle();
         if (sData) setTargetStudent({ id: studentId, name: sData.full_name });
       } else if (currentStudent) {
         setTargetStudent({ id: currentStudent.id, name: currentStudent.full_name });
@@ -71,7 +67,7 @@ function RoadmapPage() {
       if (data) {
         const passed = new Set<string>();
         const enrolled = new Set<string>();
-        data.forEach(d => {
+        data.forEach((d) => {
           const code = (d.course_code || "").trim().toUpperCase();
           if (code) {
             enrolled.add(code);
@@ -81,7 +77,7 @@ function RoadmapPage() {
         setPassedCodes(passed);
         setEnrolledCodes(enrolled);
       }
-      
+
       const savedPlan = localStorage.getItem(`plan_${idToLoad}`);
       if (savedPlan) setPlannedCourses(JSON.parse(savedPlan));
       setLoading(false);
@@ -90,12 +86,17 @@ function RoadmapPage() {
     void loadData();
   }, [studentId, currentStudent, ctxLoading]);
 
-  const roadmap = useMemo(() => 
-    getCourseRoadmap(passedCodes, enrolledCodes, plannedCourses), 
-    [passedCodes, enrolledCodes, plannedCourses]
+  const roadmap = useMemo(
+    () => getCourseRoadmap(passedCodes, enrolledCodes, plannedCourses),
+    [passedCodes, enrolledCodes, plannedCourses],
   );
 
-  if (loading) return <div className="text-center py-20 text-muted-foreground italic">Generating Visual Roadmap...</div>;
+  if (loading)
+    return (
+      <div className="text-center py-20 text-muted-foreground italic">
+        Generating Visual Roadmap...
+      </div>
+    );
 
   return (
     <div className="space-y-8">
@@ -131,9 +132,11 @@ function RoadmapPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {roadmap.filter(c => c.semester === sem).map(course => (
-                <RoadmapCard key={course.code} course={course} />
-              ))}
+              {roadmap
+                .filter((c) => c.semester === sem)
+                .map((course) => (
+                  <RoadmapCard key={course.code} course={course} />
+                ))}
             </div>
           </section>
         ))}
@@ -150,27 +153,41 @@ function RoadmapCard({ course }: { course: RoadmapCourse }) {
   const isLocked = course.status === "locked";
 
   return (
-    <div className={`glass-strong rounded-2xl p-4 border transition-all duration-500 relative group ${
-      isCompleted ? "border-emerald-500/40 bg-emerald-500/5" :
-      isEnrolled ? "border-amber-500/40 bg-amber-500/5" :
-      isPlanned ? "border-primary/40 bg-primary/5 shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.1)]" :
-      isUnlocked ? "border-sky-500/30 bg-sky-500/5" :
-      "border-white/5 opacity-50 grayscale"
-    }`}>
+    <div
+      className={`glass-strong rounded-2xl p-4 border transition-all duration-500 relative group ${
+        isCompleted
+          ? "border-emerald-500/40 bg-emerald-500/5"
+          : isEnrolled
+            ? "border-amber-500/40 bg-amber-500/5"
+            : isPlanned
+              ? "border-primary/40 bg-primary/5 shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.1)]"
+              : isUnlocked
+                ? "border-sky-500/30 bg-sky-500/5"
+                : "border-white/5 opacity-50 grayscale"
+      }`}
+    >
       <div className="flex justify-between items-start mb-2">
-        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">{course.code}</span>
+        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+          {course.code}
+        </span>
         {isCompleted && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
         {isEnrolled && <Compass className="h-4 w-4 text-amber-400" />}
         {isPlanned && <Flag className="h-4 w-4 text-primary" />}
         {isUnlocked && <Unlock className="h-4 w-4 text-sky-400" />}
         {isLocked && <Lock className="h-4 w-4 text-muted-foreground/40" />}
       </div>
-      
+
       <h3 className="font-bold text-sm leading-tight mb-2 line-clamp-2">{course.name}</h3>
-      
+
       <div className="flex items-center gap-2 mt-auto">
-        <Badge variant="outline" className="text-[9px] h-4 py-0 border-white/10">{course.credits} Cr</Badge>
-        {course.uclan && <Badge className="bg-[#FFC000] text-black text-[8px] h-4 py-0 hover:bg-[#FFC000]">UCLAN</Badge>}
+        <Badge variant="outline" className="text-[9px] h-4 py-0 border-white/10">
+          {course.credits} Cr
+        </Badge>
+        {course.uclan && (
+          <Badge className="bg-[#FFC000] text-black text-[8px] h-4 py-0 hover:bg-[#FFC000]">
+            UCLAN
+          </Badge>
+        )}
       </div>
 
       {course.prerequisite && (
@@ -190,7 +207,7 @@ function RoadmapCard({ course }: { course: RoadmapCourse }) {
   );
 }
 
-function LegendItem({ icon: Icon, label, color }: { icon: any, label: string, color: string }) {
+function LegendItem({ icon: Icon, label, color }: { icon: React.ElementType; label: string; color: string }) {
   return (
     <div className="flex items-center gap-2">
       <Icon className={`h-4 w-4 ${color}`} />

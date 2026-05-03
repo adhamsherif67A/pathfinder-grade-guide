@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AppProfile, AppRole, AppStudent } from "@/lib/app-context";
 
 // We are bypassing Supabase Auth as requested.
-export const AUTH_DISABLED = true; 
+export const AUTH_DISABLED = true;
 
 const SESSION_KEY = "edupath_session_v2";
 
@@ -85,7 +85,7 @@ export async function signInDirectly(args: {
       console.error("[Auth] No data returned from upsert");
       throw new Error("Could not create or find your student record.");
     }
-    
+
     // 2) Set local session
     setSession({
       registration_number: reg,
@@ -117,12 +117,12 @@ export async function getAppProfile(userId: string): Promise<AppProfile | null> 
   if (!s || s.registration_number !== userId) return null;
 
   // If advisor, we can return the session data directly as the profile
-  if (s.role === 'advisor') {
+  if (s.role === "advisor") {
     return {
       id: `adv_${s.registration_number}`,
       email: s.registration_number,
       full_name: s.full_name,
-      role: 'advisor',
+      role: "advisor",
       student_id: null,
     };
   }
@@ -135,7 +135,7 @@ export async function getAppProfile(userId: string): Promise<AppProfile | null> 
     .maybeSingle();
 
   if (error) throw error;
-  
+
   // If student record not found but session says student, we still need to handle it
   // though typically students are upserted on login.
   if (!data) return null;
@@ -170,4 +170,3 @@ export async function getStudentById(studentId: string): Promise<AppStudent | nu
 export async function ensureStudentLinked(args: any) {
   return args;
 }
-

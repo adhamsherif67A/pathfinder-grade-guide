@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { 
-  Users, 
-  Search, 
-  TrendingDown, 
-  CheckCircle, 
+import {
+  Users,
+  Search,
+  TrendingDown,
+  CheckCircle,
   User,
   MessageSquareWarning,
   Trash2,
@@ -13,7 +13,7 @@ import {
   ClipboardCheck,
   XCircle,
   PlusCircle,
-  Compass
+  Compass,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -57,9 +57,9 @@ type StudentRosterItem = {
 function AdvisorRoute() {
   const { role } = useAppContext();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
-    if (role && role !== 'advisor') {
+    if (role && role !== "advisor") {
       toast.error("Access denied. Advisor role required.");
       navigate({ to: "/dashboard" });
     }
@@ -78,7 +78,7 @@ function AdvisorDashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "at-risk" | "honor" | "graduating">("all");
   const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
-  
+
   const [newCourse, setNewCourse] = useState({ code: "", name: "", grade: "A", credits: "3" });
   const [isAddingCourse, setIsAddingCourse] = useState(false);
 
@@ -101,20 +101,22 @@ function AdvisorDashboard() {
       return;
     }
 
-    const roster = studentData.map(s => {
-      const studentCourses = (courseData || []).filter(c => c.student_id === s.id);
-      const gpaResult = calculateGPA(studentCourses.map(c => ({
-        letter_grade: c.letter_grade,
-        credit_hours: Number(c.credit_hours)
-      })));
+    const roster = studentData.map((s) => {
+      const studentCourses = (courseData || []).filter((c) => c.student_id === s.id);
+      const gpaResult = calculateGPA(
+        studentCourses.map((c) => ({
+          letter_grade: c.letter_grade,
+          credit_hours: Number(c.credit_hours),
+        })),
+      );
 
       const stats = calculateStudentStats(
-        studentCourses.map(c => ({
+        studentCourses.map((c) => ({
           course_code: c.course_code,
           letter_grade: c.letter_grade,
-          credit_hours: Number(c.credit_hours)
+          credit_hours: Number(c.credit_hours),
         })),
-        gpaResult.gpa
+        gpaResult.gpa,
       );
 
       let status: StudentRosterItem["status"] = "stable";
@@ -130,7 +132,7 @@ function AdvisorDashboard() {
         gpa: gpaResult.gpa,
         credits: gpaResult.totalCredits,
         status,
-        stats
+        stats,
       };
     });
 
@@ -143,13 +145,15 @@ function AdvisorDashboard() {
   }, []);
 
   const filteredStudents = useMemo(() => {
-    return students.filter(s => {
-      const matchesSearch = s.full_name.toLowerCase().includes(search.toLowerCase()) || 
-                            s.registration_number.includes(search);
-      const matchesFilter = filter === "all" || 
-                            (filter === "at-risk" && s.status === "at-risk") || 
-                            (filter === "graduating" && s.stats.graduationAudit.isReady) ||
-                            (filter === "honor" && s.status === "honor");
+    return students.filter((s) => {
+      const matchesSearch =
+        s.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        s.registration_number.includes(search);
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "at-risk" && s.status === "at-risk") ||
+        (filter === "graduating" && s.stats.graduationAudit.isReady) ||
+        (filter === "honor" && s.status === "honor");
       return matchesSearch && matchesFilter;
     });
   }, [students, search, filter]);
@@ -157,9 +161,9 @@ function AdvisorDashboard() {
   const overview = useMemo(() => {
     return {
       total: students.length,
-      atRisk: students.filter(s => s.status === "at-risk").length,
-      ready: students.filter(s => s.stats.graduationAudit.isReady).length,
-      avgGpa: students.length ? students.reduce((acc, s) => acc + s.gpa, 0) / students.length : 0
+      atRisk: students.filter((s) => s.status === "at-risk").length,
+      ready: students.filter((s) => s.stats.graduationAudit.isReady).length,
+      avgGpa: students.length ? students.reduce((acc, s) => acc + s.gpa, 0) / students.length : 0,
     };
   }, [students]);
 
@@ -175,7 +179,7 @@ function AdvisorDashboard() {
       course_code: newCourse.code.toUpperCase(),
       course_name: newCourse.name,
       letter_grade: newCourse.grade,
-      credit_hours: Number(newCourse.credits)
+      credit_hours: Number(newCourse.credits),
     });
 
     if (error) {
@@ -194,7 +198,9 @@ function AdvisorDashboard() {
 
   const clearStudentData = async () => {
     if (!selectedStudent) return;
-    const confirm = window.confirm(`Are you sure you want to completely erase the academic record for ${selectedStudent.full_name}? This action cannot be undone.`);
+    const confirm = window.confirm(
+      `Are you sure you want to completely erase the academic record for ${selectedStudent.full_name}? This action cannot be undone.`,
+    );
     if (!confirm) return;
 
     const { error } = await supabase.from("courses").delete().eq("student_id", selectedStudent.id);
@@ -206,14 +212,21 @@ function AdvisorDashboard() {
     }
   };
 
-  if (loading) return <div className="text-center py-20 text-muted-foreground italic">Syncing Department Roster...</div>;
+  if (loading)
+    return (
+      <div className="text-center py-20 text-muted-foreground italic">
+        Syncing Department Roster...
+      </div>
+    );
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Advisor Portal</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">Departmental Oversight & Graduation Tracking</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">
+            Departmental Oversight & Graduation Tracking
+          </p>
         </div>
       </div>
 
@@ -228,19 +241,35 @@ function AdvisorDashboard() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search students..." 
+            <Input
+              placeholder="Search students..."
               className="pl-10 bg-white/5 border-white/10 w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <Button variant={filter === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('all')}>All</Button>
-            <Button variant={filter === 'at-risk' ? 'destructive' : 'ghost'} size="sm" onClick={() => setFilter('at-risk')} className="gap-2 whitespace-nowrap">
+            <Button
+              variant={filter === "all" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("all")}
+            >
+              All
+            </Button>
+            <Button
+              variant={filter === "at-risk" ? "destructive" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("at-risk")}
+              className="gap-2 whitespace-nowrap"
+            >
               <TrendingDown className="h-4 w-4" /> At Risk
             </Button>
-            <Button variant={filter === 'graduating' ? 'default' : 'ghost'} size="sm" onClick={() => setFilter('graduating')} className="gap-2 text-emerald-400 whitespace-nowrap">
+            <Button
+              variant={filter === "graduating" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("graduating")}
+              className="gap-2 text-emerald-400 whitespace-nowrap"
+            >
               <GraduationCap className="h-4 w-4" /> Grad Ready
             </Button>
           </div>
@@ -258,7 +287,7 @@ function AdvisorDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredStudents.map(student => (
+              {filteredStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-white/5 transition-colors group">
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
@@ -266,13 +295,21 @@ function AdvisorDashboard() {
                         <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold text-xs sm:text-sm truncate">{student.full_name}</div>
-                        <div className="text-[9px] sm:text-[10px] text-muted-foreground">Reg: {student.registration_number}</div>
+                        <div className="font-semibold text-xs sm:text-sm truncate">
+                          {student.full_name}
+                        </div>
+                        <div className="text-[9px] sm:text-[10px] text-muted-foreground">
+                          Reg: {student.registration_number}
+                        </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <div className={`text-sm sm:text-lg font-mono font-bold ${student.gpa < 2.0 ? 'text-destructive' : 'text-foreground'}`}>{student.gpa.toFixed(2)}</div>
+                    <div
+                      className={`text-sm sm:text-lg font-mono font-bold ${student.gpa < 2.0 ? "text-destructive" : "text-foreground"}`}
+                    >
+                      {student.gpa.toFixed(2)}
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-center hidden sm:table-cell">
                     <div className="text-sm font-medium">{student.credits} / 144</div>
@@ -283,16 +320,19 @@ function AdvisorDashboard() {
                         <ClipboardCheck className="h-3 w-3" /> Ready
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-muted-foreground gap-1 text-[9px] sm:text-[10px]">
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground gap-1 text-[9px] sm:text-[10px]"
+                      >
                         In Progress
                       </Badge>
                     )}
                   </td>
                   <td className="px-4 py-4 text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="sm:opacity-0 group-hover:opacity-100 transition-opacity p-2" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="sm:opacity-0 group-hover:opacity-100 transition-opacity p-2"
                       onClick={() => setSelectedStudent(student)}
                     >
                       <Settings className="h-4 w-4" />
@@ -310,16 +350,19 @@ function AdvisorDashboard() {
           <div className="p-6">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5 text-primary" /> Academic Audit: {selectedStudent?.full_name}
+                <ClipboardCheck className="h-5 w-5 text-primary" /> Academic Audit:{" "}
+                {selectedStudent?.full_name}
               </DialogTitle>
-              <DialogDescription>Registration: {selectedStudent?.registration_number}</DialogDescription>
+              <DialogDescription>
+                Registration: {selectedStudent?.registration_number}
+              </DialogDescription>
             </DialogHeader>
 
             {selectedStudent && (
               <div className="space-y-6 py-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full justify-start gap-3 border-sky-500/20 text-sky-400 hover:bg-sky-500/10"
                     asChild
                   >
@@ -334,62 +377,101 @@ function AdvisorDashboard() {
                     <GraduationCap className="h-3 w-3" /> Graduation Checklist
                   </h4>
                   <div className="space-y-2">
-                    <AuditRow label="Min GPA (2.0+)" isDone={selectedStudent.stats.graduationAudit.isGpaQualified} />
-                    <AuditRow label="144 Credits" isDone={selectedStudent.stats.graduationAudit.totalCreditsPassed >= 144} />
-                    <AuditRow label="8 Core Semesters" isDone={selectedStudent.stats.graduationAudit.coreSemestersCompleted === 8} />
-                    <AuditRow label="Concentration" isDone={selectedStudent.stats.graduationAudit.concentrationCredits >= 6} />
+                    <AuditRow
+                      label="Min GPA (2.0+)"
+                      isDone={selectedStudent.stats.graduationAudit.isGpaQualified}
+                    />
+                    <AuditRow
+                      label="144 Credits"
+                      isDone={selectedStudent.stats.graduationAudit.totalCreditsPassed >= 144}
+                    />
+                    <AuditRow
+                      label="8 Core Semesters"
+                      isDone={selectedStudent.stats.graduationAudit.coreSemestersCompleted === 8}
+                    />
+                    <AuditRow
+                      label="Concentration"
+                      isDone={selectedStudent.stats.graduationAudit.concentrationCredits >= 6}
+                    />
                   </div>
                 </section>
 
                 <section className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-bold uppercase text-muted-foreground">Administrative Record Entry</h4>
-                    <Button variant="ghost" size="sm" className="h-6 text-[9px]" onClick={() => setIsAddingCourse(!isAddingCourse)}>
+                    <h4 className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Administrative Record Entry
+                    </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[9px]"
+                      onClick={() => setIsAddingCourse(!isAddingCourse)}
+                    >
                       {isAddingCourse ? "Cancel" : "Add Course Override"}
                     </Button>
                   </div>
-                  
+
                   {isAddingCourse ? (
                     <div className="glass rounded-xl p-4 border border-accent/20 bg-accent/5 space-y-3 animate-in fade-in slide-in-from-top-2">
                       <div className="grid grid-cols-2 gap-2">
-                        <Input 
-                          placeholder="Code (e.g. ME101)" 
-                          value={newCourse.code} 
-                          onChange={e => setNewCourse({...newCourse, code: e.target.value})}
+                        <Input
+                          placeholder="Code (e.g. ME101)"
+                          value={newCourse.code}
+                          onChange={(e) => setNewCourse({ ...newCourse, code: e.target.value })}
                           className="bg-white/10 text-xs h-8"
                         />
-                        <Input 
-                          placeholder="Course Name" 
-                          value={newCourse.name} 
-                          onChange={e => setNewCourse({...newCourse, name: e.target.value})}
+                        <Input
+                          placeholder="Course Name"
+                          value={newCourse.name}
+                          onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
                           className="bg-white/10 text-xs h-8"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <Select value={newCourse.grade} onValueChange={v => setNewCourse({...newCourse, grade: v})}>
-                          <SelectTrigger className="h-8 bg-white/10 text-xs"><SelectValue /></SelectTrigger>
+                        <Select
+                          value={newCourse.grade}
+                          onValueChange={(v) => setNewCourse({ ...newCourse, grade: v })}
+                        >
+                          <SelectTrigger className="h-8 bg-white/10 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
-                            {GRADE_OPTIONS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                            {GRADE_OPTIONS.map((g) => (
+                              <SelectItem key={g} value={g}>
+                                {g}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        <Input 
-                          type="number" 
-                          placeholder="Credits" 
-                          value={newCourse.credits} 
-                          onChange={e => setNewCourse({...newCourse, credits: e.target.value})}
+                        <Input
+                          type="number"
+                          placeholder="Credits"
+                          value={newCourse.credits}
+                          onChange={(e) => setNewCourse({ ...newCourse, credits: e.target.value })}
                           className="bg-white/10 text-xs h-8"
                         />
                       </div>
-                      <Button className="w-full h-8 text-xs gap-2 bg-accent hover:bg-accent/80" onClick={addAdminCourse}>
+                      <Button
+                        className="w-full h-8 text-xs gap-2 bg-accent hover:bg-accent/80"
+                        onClick={addAdminCourse}
+                      >
                         <PlusCircle className="h-3 w-3" /> Save Override Record
                       </Button>
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" className="flex-1 h-9 text-[10px] gap-2 border-amber-500/20 text-amber-500 bg-amber-500/5" onClick={sendAlert}>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-9 text-[10px] gap-2 border-amber-500/20 text-amber-500 bg-amber-500/5"
+                        onClick={sendAlert}
+                      >
                         <MessageSquareWarning className="h-3 w-3" /> Alert Student
                       </Button>
-                      <Button variant="outline" className="flex-1 h-9 text-[10px] gap-2 border-destructive/20 text-destructive bg-destructive/5" onClick={clearStudentData}>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-9 text-[10px] gap-2 border-destructive/20 text-destructive bg-destructive/5"
+                        onClick={clearStudentData}
+                      >
                         <Trash2 className="h-3 w-3" /> Reset Records
                       </Button>
                     </div>
@@ -407,26 +489,46 @@ function AdvisorDashboard() {
   );
 }
 
-function StatTile({ label, value, color }: { label: string, value: string | number, color: string }) {
+function StatTile({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  color: string;
+}) {
   const borderMap: Record<string, string> = {
     primary: "border-primary",
     destructive: "border-destructive",
     emerald: "border-emerald-500",
-    accent: "border-accent"
+    accent: "border-accent",
   };
   return (
-    <div className={`glass-strong rounded-xl p-3 sm:p-4 border-l-4 ${borderMap[color] || 'border-white/10'}`}>
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div
+      className={`glass-strong rounded-xl p-3 sm:p-4 border-l-4 ${borderMap[color] || "border-white/10"}`}
+    >
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
       <div className="text-lg sm:text-xl font-bold truncate">{value}</div>
     </div>
   );
 }
 
-function AuditRow({ label, isDone }: { label: string, isDone: boolean }) {
+function AuditRow({ label, isDone }: { label: string; isDone: boolean }) {
   return (
     <div className="flex items-center gap-2 py-0.5">
-      {isDone ? <CheckCircle className="h-3 w-3 text-emerald-400" /> : <XCircle className="h-3 w-3 text-muted-foreground/30" />}
-      <span className={`text-[11px] sm:text-xs ${isDone ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>{label}</span>
+      {isDone ? (
+        <CheckCircle className="h-3 w-3 text-emerald-400" />
+      ) : (
+        <XCircle className="h-3 w-3 text-muted-foreground/30" />
+      )}
+      <span
+        className={`text-[11px] sm:text-xs ${isDone ? "text-foreground font-medium" : "text-muted-foreground"}`}
+      >
+        {label}
+      </span>
     </div>
   );
 }
