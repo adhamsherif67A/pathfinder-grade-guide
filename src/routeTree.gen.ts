@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GpaCalculatorRouteImport } from './routes/gpa-calculator'
@@ -17,6 +18,11 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdvisorRouteImport } from './routes/advisor'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadmapRoute = RoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/degree-planner': typeof DegreePlannerRoute
   '/gpa-calculator': typeof GpaCalculatorRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/degree-planner'
     | '/gpa-calculator'
     | '/login'
+    | '/profile'
     | '/roadmap'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/degree-planner'
     | '/gpa-calculator'
     | '/login'
+    | '/profile'
     | '/roadmap'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/degree-planner'
     | '/gpa-calculator'
     | '/login'
+    | '/profile'
     | '/roadmap'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   DegreePlannerRoute: typeof DegreePlannerRoute
   GpaCalculatorRoute: typeof GpaCalculatorRoute
   LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
   RoadmapRoute: typeof RoadmapRoute
 }
 
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/roadmap'
       fullPath: '/roadmap'
       preLoaderRoute: typeof RoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -182,8 +202,10 @@ const rootRouteChildren: RootRouteChildren = {
   DegreePlannerRoute: DegreePlannerRoute,
   GpaCalculatorRoute: GpaCalculatorRoute,
   LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
   RoadmapRoute: RoadmapRoute,
 }
+
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()

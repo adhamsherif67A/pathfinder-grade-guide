@@ -184,23 +184,27 @@ export function AppShell({
                 </Link>
               </div>
 
-              <nav className="flex items-center gap-2 p-1 bg-white/5 rounded-2xl border border-white/5">
-                {role === 'advisor' && navItem("/advisor", "Directory", Users)}
-                {navItem("/dashboard", "Summary", LayoutDashboard)}
-                {navItem("/roadmap", "Roadmap", Compass)}
-                {navItem("/degree-planner", "Planner", Map)}
-                {navItem("/gpa-calculator", "Calculator", Calculator)}
-              </nav>
+              <nav className="flex items-center gap-1">
+                  {role === 'advisor' && navItem("/advisor", "Roster", Users)}
+                  {navItem("/dashboard", "Home", LayoutDashboard)}
+                  {navItem("/roadmap", "Roadmap", Compass)}
+                  {navItem("/degree-planner", "Planner", Map)}
+                  {navItem("/gpa-calculator", "Calculator", Calculator)}
+                  {role === 'student' && navItem("/profile", "Profile", UserIcon)}
+                </nav>
 
-              <div className="flex items-center gap-3">
-                <ThemeToggle />
-                <Avatar className="h-9 w-9 border-2 border-primary/20">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
-                </Avatar>
-                <Button variant="ghost" size="sm" onClick={logout} className="rounded-xl gap-2 hover:bg-destructive/10 hover:text-destructive">
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </Button>
+                <div className="flex items-center gap-3">
+                  <ThemeToggle />
+                  <Link to="/profile" className="transition-transform hover:scale-110 active:scale-95">
+                    <Avatar className="h-9 w-9 border-2 border-primary/20">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
+                    </Avatar>
+                  </Link>
+                  <Button variant="ghost" size="sm" onClick={logout} className="rounded-xl gap-2 hover:bg-destructive/10 hover:text-destructive">
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </header>
@@ -209,13 +213,13 @@ export function AppShell({
         {/* Mobile Header (Identity Only) */}
         {showHeader && (
           <div className="md:hidden flex items-center justify-between p-4 bg-background/50 backdrop-blur-md sticky top-0 z-30 border-b border-white/5">
-            <div className="flex items-center gap-2">
+            <Link to="/profile" className="flex items-center gap-2">
                <img src={edupathLogo} alt="Logo" className="h-8 w-8 rounded-lg bg-white p-1" />
                <span className="font-bold text-sm">EduPath</span>
-            </div>
+            </Link>
             <div className="flex items-center gap-3">
                <ThemeToggle />
-               <span className="text-[10px] font-bold text-primary truncate max-w-[120px]">{titleLine}</span>
+               <span className="text-[10px] font-bold text-primary truncate max-w-[100px]">{titleLine}</span>
                <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8"><LogOut className="h-4 w-4" /></Button>
             </div>
           </div>
@@ -238,9 +242,10 @@ export function AppShell({
             ) : (
                <>
                  {mobileNavItem("/dashboard", "Home", LayoutDashboard)}
-                 {mobileNavItem("/roadmap", "Roadmap", Compass)}
+                 {mobileNavItem("/roadmap", "Map", Compass)}
                  {mobileNavItem("/degree-planner", "Planner", Map)}
                  {mobileNavItem("/gpa-calculator", "Calc", Calculator)}
+                 {mobileNavItem("/profile", "Me", UserIcon)}
                </>
             )}
           </nav>
