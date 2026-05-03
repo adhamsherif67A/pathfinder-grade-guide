@@ -211,7 +211,7 @@ function DegreePlannerPage() {
             <RotateCcw className="h-4 w-4 mr-1" /> Reset Plan
           </Button>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            {completedCodes.size} Completed
+            {passedCodes.size} Passed
           </Badge>
           <Badge variant="outline" className="bg-accent/5 text-accent border-accent/20">
             {plannedCourses.length} Planned
@@ -226,7 +226,7 @@ function DegreePlannerPage() {
             <Plus className="h-5 w-5" /> Available Courses
           </h2>
           <div className="overflow-y-auto space-y-2 pr-2">
-            {CURRICULUM.filter(c => !completedCodes.has(c.code.toUpperCase()) && !plannedCourses.some(p => p.course_code === c.code.toUpperCase()))
+            {CURRICULUM.filter(c => !enrolledCodes.has(c.code.toUpperCase()) && !plannedCourses.some(p => p.course_code === c.code.toUpperCase()))
               .map(course => {
                 const isNextSem = course.semester === nextSemesterToPlan;
                 return (
@@ -273,10 +273,10 @@ function DegreePlannerPage() {
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {plannerSemesters.map(semNum => {
               const semPlanned = plannedCourses.filter(p => p.semester === semNum);
-              // Find completed courses that belong to this semester
+              // Find passed courses that belong to this semester
               const semCompleted = CURRICULUM.filter(c => 
                 c.semester === semNum && 
-                completedCodes.has(c.code.toUpperCase())
+                passedCodes.has(c.code.toUpperCase())
               ).map(c => ({ course_code: c.code, isCompleted: true }));
 
               return (
