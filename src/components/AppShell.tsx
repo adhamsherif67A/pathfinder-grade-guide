@@ -205,7 +205,6 @@ export function AppShell({
                     <span>Logout</span>
                   </Button>
                 </div>
-              </div>
             </div>
           </header>
         )}
