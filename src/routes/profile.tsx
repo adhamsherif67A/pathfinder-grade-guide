@@ -6,13 +6,11 @@ import {
   Cpu, 
   Brain, 
   CheckCircle2, 
-  QrCode, 
   ShieldCheck,
   Zap,
   GraduationCap,
   History,
-  TrendingUp,
-  MapPin
+  TrendingUp
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -97,7 +95,7 @@ function ProfilePage() {
         color: "text-purple-400"
     };
     return { 
-        title: "Mechatronics Generalist", 
+        title: "Mechatronics", 
         icon: Zap, 
         desc: "Core proficiency across mechanical, electrical, and control engineering.",
         color: "text-primary"
@@ -133,14 +131,8 @@ function ProfilePage() {
             </Badge>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tighter mb-2">{student?.full_name}</h1>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              <span className="flex items-center gap-2"><MapPin className="h-3 w-3" /> AAST Smart Village</span>
               <span className="flex items-center gap-2"><History className="h-3 w-3" /> Class of {student?.enrollment_year ? student.enrollment_year + 5 : "2027"}</span>
             </div>
-          </div>
-
-          <div className="shrink-0 glass p-4 rounded-3xl border-white/5 flex flex-col items-center gap-2">
-             <QrCode className="h-16 w-16 opacity-40" />
-             <span className="text-[8px] font-black uppercase opacity-30">Scan for Verification</span>
           </div>
         </div>
       </section>
