@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 import appCss from "../styles.css?url";
 
@@ -88,9 +89,9 @@ function RootComponent() {
   }, []);
 
   return (
-    <>
+    <ThemeProvider defaultTheme="dark" storageKey="edupath-ui-theme">
       <Outlet />
       <Toaster richColors position="top-center" />
-    </>
+    </ThemeProvider>
   );
 }

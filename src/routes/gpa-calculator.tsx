@@ -254,13 +254,13 @@ function GpaCalculatorPage() {
       </div>
 
       {/* Floating Action Button for Mobile */}
-      <div className="md:hidden fixed bottom-24 right-6 z-50">
+      <div className="md:hidden fixed bottom-32 right-6 z-[60]">
         <Button 
           size="icon" 
-          className="h-14 w-14 rounded-full shadow-2xl shadow-primary/40 border-2 border-white/20"
+          className="h-16 w-16 rounded-full shadow-2xl shadow-primary/50 border-2 border-white/20 bg-primary text-primary-foreground"
           onClick={() => setPickerOpen(true)}
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-8 w-8" />
         </Button>
       </div>
 
