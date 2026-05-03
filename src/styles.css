@@ -32,11 +32,52 @@
   --color-glass-border: var(--glass-border);
 }
 
-:root,
-.dark {
+:root {
   --radius: 0.875rem;
 
-  /* Deep navy / teal academic palette */
+  /* LIGHT MODE - CLEAN ACADEMIC WHITE/TEAL */
+  --background: oklch(0.99 0.005 240);
+  --foreground: oklch(0.2 0.04 230);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.04 230);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.04 230);
+
+  --primary: oklch(0.55 0.13 195);
+  --primary-foreground: oklch(0.99 0.005 240);
+
+  --secondary: oklch(0.92 0.02 230);
+  --secondary-foreground: oklch(0.2 0.04 230);
+
+  --muted: oklch(0.95 0.01 230);
+  --muted-foreground: oklch(0.45 0.04 230);
+
+  --accent: oklch(0.5 0.1 200);
+  --accent-foreground: oklch(0.99 0.005 240);
+
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 240);
+
+  --border: oklch(0 0 0 / 8%);
+  --input: oklch(0 0 0 / 6%);
+  --ring: oklch(0.55 0.13 195);
+
+  --glass: oklch(1 0 0 / 65%);
+  --glass-border: oklch(0 0 0 / 10%);
+
+  --gradient-primary: linear-gradient(135deg, oklch(0.55 0.13 195), oklch(0.45 0.1 230));
+  --gradient-overlay: linear-gradient(
+    135deg,
+    oklch(0.99 0.005 240 / 0.85),
+    oklch(0.95 0.01 240 / 0.7)
+  );
+  --shadow-glass: 0 10px 40px -10px oklch(0 0 0 / 0.1);
+}
+
+.dark {
+  /* DARK MODE - DEEP NAVY */
   --background: oklch(0.18 0.04 230);
   --foreground: oklch(0.98 0.005 240);
 
@@ -46,7 +87,7 @@
   --popover: oklch(0.22 0.05 230);
   --popover-foreground: oklch(0.98 0.005 240);
 
-  --primary: oklch(0.72 0.13 195); /* teal accent like the eng logo */
+  --primary: oklch(0.72 0.13 195);
   --primary-foreground: oklch(0.15 0.04 230);
 
   --secondary: oklch(0.32 0.06 230);
@@ -114,6 +155,13 @@
     -webkit-backdrop-filter: blur(22px) saturate(160%);
     box-shadow: var(--shadow-glass);
   }
+  .dark .glass-strong {
+    background: oklch(0.22 0.05 230 / 0.55);
+  }
+  .light .glass-strong {
+    background: oklch(1 0 0 / 75%);
+  }
+
   .text-gradient {
     background: var(--gradient-primary);
     -webkit-background-clip: text;

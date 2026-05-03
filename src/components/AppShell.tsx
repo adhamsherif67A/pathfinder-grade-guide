@@ -155,15 +155,16 @@ export function AppShell({
 
   return (
     <AppContextProvider value={{ loading, profile, student, role, refresh }}>
-      <div className="relative min-h-screen w-full flex flex-col bg-background">
-        {/* Decorative Background */}
+      <div className="relative min-h-screen w-full flex flex-col transition-colors duration-500">
+        {/* Full-Screen Campus Background */}
         <div
-          className="fixed inset-0 -z-20 bg-center bg-cover"
-          style={{ backgroundImage: `url(${campusBg})`, opacity: 0.4 }}
+          className="fixed inset-0 -z-20 bg-center bg-cover transition-opacity duration-1000"
+          style={{ backgroundImage: `url(${campusBg})`, opacity: theme === 'dark' ? 0.45 : 0.25 }}
           aria-hidden
         />
+        {/* Dynamic Theme Overlay */}
         <div
-          className="fixed inset-0 -z-10"
+          className="fixed inset-0 -z-10 transition-colors duration-1000"
           style={{ background: "var(--gradient-overlay)" }}
           aria-hidden
         />
