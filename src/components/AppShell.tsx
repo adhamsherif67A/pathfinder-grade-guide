@@ -41,6 +41,7 @@ export function AppShell({
 }) {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { theme } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<AppProfile | null>(null);
