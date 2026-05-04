@@ -14,6 +14,7 @@ import {
   XCircle,
   PlusCircle,
   Compass,
+  BookOpen,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { calculateGPA, GRADE_OPTIONS } from "@/lib/gpa";
 import { calculateStudentStats, type StudentStats } from "@/lib/student-stats";
+import { CURRICULUM, CURRICULUM_BY_CODE, SEMESTERS } from "@/lib/curriculum";
 
 export const Route = createFileRoute("/advisor")({
   component: AdvisorRoute,
@@ -78,139 +80,42 @@ function AdvisorDashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "at-risk" | "honor" | "graduating">("all");
   const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
+// New Course Entry State
+const [newCourse, setNewCourse] = useState({ code: "", name: "", grade: "A", credits: "3" });
+const [isAddingCourse, setIsAddingCourse] = useState(false);
 
-  const [newCourse, setNewCourse] = useState({ code: "", name: "", grade: "A", credits: "3" });
-  const [isAddingCourse, setIsAddingCourse] = useState(false);
+// Curriculum Catalog State for Advisor
+const [catalogOpen, setCatalogOpen] = useState(false);
+const [catSearch, setCatSearch] = useState("");
+const [catFilterSem, setCatFilterSem] = useState("all");
 
-  const fetchRoster = async () => {
-    setLoading(true);
-    const { data: studentData, error: sErr } = await supabase.from("students").select("*");
-    if (sErr || !studentData) {
-      toast.error("Failed to load student roster");
-      setLoading(false);
-      return;
-    }
-
-    const { data: courseData, error: cErr } = await supabase
-      .from("courses")
-      .select("student_id, letter_grade, credit_hours, course_code");
-
-    if (cErr) {
-      toast.error("Failed to load grade data");
-      setLoading(false);
-      return;
-    }
-
-    const roster = studentData.map((s) => {
-      const studentCourses = (courseData || []).filter((c) => c.student_id === s.id);
-      const gpaResult = calculateGPA(
-        studentCourses.map((c) => ({
-          letter_grade: c.letter_grade,
-          credit_hours: Number(c.credit_hours),
-        })),
-      );
-
-      const stats = calculateStudentStats(
-        studentCourses.map((c) => ({
-          course_code: c.course_code,
-          letter_grade: c.letter_grade,
-          credit_hours: Number(c.credit_hours),
-        })),
-        gpaResult.gpa,
-      );
-
-      let status: StudentRosterItem["status"] = "stable";
-      if (gpaResult.gpa < 2.0) status = "at-risk";
-      else if (gpaResult.gpa < 2.5) status = "warning";
-      else if (gpaResult.gpa >= 3.6) status = "honor";
-
-      return {
-        id: s.id,
-        full_name: s.full_name,
-        registration_number: s.registration_number,
-        enrollment_year: s.enrollment_year,
-        gpa: gpaResult.gpa,
-        credits: gpaResult.totalCredits,
-        status,
-        stats,
-      };
-    });
-
-    setStudents(roster);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    void fetchRoster();
-  }, []);
-
-  const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
-      const matchesSearch =
-        s.full_name.toLowerCase().includes(search.toLowerCase()) ||
-        s.registration_number.includes(search);
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "at-risk" && s.status === "at-risk") ||
-        (filter === "graduating" && s.stats.graduationAudit.isReady) ||
-        (filter === "honor" && s.status === "honor");
-      return matchesSearch && matchesFilter;
-    });
-  }, [students, search, filter]);
-
-  const overview = useMemo(() => {
-    return {
-      total: students.length,
-      atRisk: students.filter((s) => s.status === "at-risk").length,
-      ready: students.filter((s) => s.stats.graduationAudit.isReady).length,
-      avgGpa: students.length ? students.reduce((acc, s) => acc + s.gpa, 0) / students.length : 0,
-    };
-  }, [students]);
-
-  const addAdminCourse = async () => {
+  const enrollFromCatalog = async (c: typeof CURRICULUM[0]) => {
     if (!selectedStudent) return;
-    if (!newCourse.code || !newCourse.name) {
-      toast.error("Course code and name are required");
-      return;
-    }
-
+    
     const { error } = await supabase.from("courses").insert({
       student_id: selectedStudent.id,
-      course_code: newCourse.code.toUpperCase(),
-      course_name: newCourse.name,
-      letter_grade: newCourse.grade,
-      credit_hours: Number(newCourse.credits),
-    });
+      course_code: c.code,
+      course_name: c.name,
+      letter_grade: "A", 
+      credit_hours: c.credits
+    } as never);
 
     if (error) {
-      toast.error("Failed to add course");
+      toast.error(`Failed to enroll in ${c.code}`);
     } else {
-      toast.success("Course added to student record");
-      setNewCourse({ code: "", name: "", grade: "A", credits: "3" });
-      setIsAddingCourse(false);
+      toast.success(`Enrolled ${selectedStudent.full_name} in ${c.code}`);
       fetchRoster();
     }
   };
 
-  const sendAlert = () => {
-    toast.success(`Formal warning sent to ${selectedStudent?.full_name}'s student email.`);
-  };
-
-  const clearStudentData = async () => {
-    if (!selectedStudent) return;
-    const confirm = window.confirm(
-      `Are you sure you want to completely erase the academic record for ${selectedStudent.full_name}? This action cannot be undone.`,
-    );
-    if (!confirm) return;
-
-    const { error } = await supabase.from("courses").delete().eq("student_id", selectedStudent.id);
-    if (error) toast.error("Failed to clear data.");
-    else {
-      toast.success(`Academic record erased for ${selectedStudent.full_name}.`);
-      setSelectedStudent(null);
-      fetchRoster();
-    }
-  };
+  const filteredCatalog = useMemo(() => {
+    const q = catSearch.trim().toLowerCase();
+    return CURRICULUM.filter((c) => {
+      if (catFilterSem !== "all" && c.semester !== catFilterSem) return false;
+      if (!q) return true;
+      return c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+    });
+  }, [catFilterSem, catSearch]);
 
   if (loading)
     return (
@@ -460,18 +365,17 @@ function AdvisorDashboard() {
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        className="flex-1 h-9 text-[10px] gap-2 border-amber-500/20 text-amber-500 bg-amber-500/5"
-                        onClick={sendAlert}
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 h-9 text-[10px] gap-2 border-primary/20 text-primary bg-primary/5"
+                        onClick={() => setCatalogOpen(true)}
                       >
+                        <BookOpen className="h-3 w-3" /> Mechatronics Catalog
+                      </Button>
+                      <Button variant="outline" className="flex-1 h-9 text-[10px] gap-2 border-amber-500/20 text-amber-500 bg-amber-500/5" onClick={sendAlert}>
                         <MessageSquareWarning className="h-3 w-3" /> Alert Student
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1 h-9 text-[10px] gap-2 border-destructive/20 text-destructive bg-destructive/5"
-                        onClick={clearStudentData}
-                      >
+                      <Button variant="outline" className="flex-1 h-9 text-[10px] gap-2 border-destructive/20 text-destructive bg-destructive/5" onClick={clearStudentData}>
                         <Trash2 className="h-3 w-3" /> Reset Records
                       </Button>
                     </div>
@@ -482,6 +386,85 @@ function AdvisorDashboard() {
           </div>
           <div className="bg-white/5 p-3 text-[9px] text-muted-foreground text-center border-t border-white/10">
             All administrative actions are timestamped and logged.
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Curriculum Catalog for Advisor */}
+      <Dialog open={catalogOpen} onOpenChange={setCatalogOpen}>
+        <DialogContent className="max-w-4xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-3xl h-[88vh] sm:h-[80vh] flex flex-col focus:outline-none">
+          <div className="p-4 sm:p-8 flex flex-col h-full min-h-0">
+            <DialogHeader className="mb-6 shrink-0">
+               <div className="flex items-center justify-between">
+                  <DialogTitle className="flex items-center gap-3 text-2xl sm:text-3xl font-black tracking-tighter">
+                     <div className="p-2.5 rounded-2xl bg-primary/20"><BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" /></div>
+                     Curriculum Catalog
+                  </DialogTitle>
+                  <Button variant="ghost" size="icon" onClick={() => setCatalogOpen(false)} className="sm:hidden"><Trash2 className="h-5 w-5 opacity-50" /></Button>
+               </div>
+               <DialogDescription className="text-[11px] uppercase font-black tracking-[0.1em] opacity-40 mt-1">
+                  Enrolling: {selectedStudent?.full_name}
+               </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-6 shrink-0">
+              <div className="relative flex-1">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                  placeholder="Search by code or subject name..."
+                  value={catSearch}
+                  onChange={(e) => setCatSearch(e.target.value)}
+                  className="pl-14 h-14 rounded-2xl bg-white/5 border-white/10 text-lg shadow-2xl focus:ring-primary/20"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={catFilterSem} onValueChange={setCatFilterSem}>
+                  <SelectTrigger className="flex-1 sm:w-[160px] h-14 bg-white/5 border-white/10 rounded-2xl text-xs font-bold uppercase tracking-widest">
+                    <SelectValue placeholder="Semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Terms</SelectItem>
+                    {SEMESTERS.map((s) => (
+                      <SelectItem key={s} value={s}>{s.startsWith("Conc") ? s : `Sem ${s}`}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 pr-2 custom-scrollbar pb-10 sm:pb-2 touch-pan-y overscroll-contain">
+               {filteredCatalog.map(course => (
+                  <div key={course.code} className={`glass-strong rounded-[2rem] p-6 border transition-all duration-300 ${course.uclan ? 'border-l-8 border-l-[#FFC000]' : 'border-white/5'}`}>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                       <div>
+                          <div className="flex items-center gap-3 mb-2">
+                             <span className="font-mono text-xs text-primary font-black uppercase tracking-widest bg-primary/10 px-2 py-1 rounded-lg">{course.code}</span>
+                             {course.uclan && <Badge className="bg-[#FFC000] text-black text-[9px] h-5 border-none font-black px-2">UK INTEGRATED</Badge>}
+                          </div>
+                          <h4 className="font-black text-lg leading-none tracking-tight">{course.name}</h4>
+                          <div className="text-xs text-muted-foreground mt-2 flex gap-3 font-bold uppercase tracking-wider opacity-60">
+                             <span>{course.credits} Cr</span>
+                             <span>•</span>
+                             <span>Sem {course.semester}</span>
+                          </div>
+                       </div>
+                       <Button 
+                        size="lg"
+                        className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all w-full sm:w-auto"
+                        onClick={() => enrollFromCatalog(course)}
+                       >
+                        Enroll Student
+                       </Button>
+                    </div>
+                  </div>
+               ))}
+            </div>
+            
+            <div className="sm:hidden mt-4 shrink-0">
+               <Button className="w-full h-14 rounded-2xl shadow-2xl font-black text-xs uppercase tracking-widest border-2 border-white/10 bg-primary text-primary-foreground" onClick={() => setCatalogOpen(false)}>
+                  Back to Panel
+               </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
