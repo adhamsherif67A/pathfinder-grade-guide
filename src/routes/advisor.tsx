@@ -93,6 +93,7 @@ function AdvisorDashboard() {
   const fetchRoster = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("[Advisor] Fetching student roster...");
       // 1. Get all students
       const { data: sData, error: sErr } = await supabase
         .from("students")
@@ -100,6 +101,7 @@ function AdvisorDashboard() {
         .order("full_name", { ascending: true });
 
       if (sErr) throw sErr;
+      console.log(`[Advisor] Found ${sData?.length || 0} students.`);
 
       // 2. Get all courses
       const { data: cData, error: cErr } = await supabase
@@ -107,19 +109,23 @@ function AdvisorDashboard() {
         .select("*");
 
       if (cErr) throw cErr;
+      console.log(`[Advisor] Found ${cData?.length || 0} total course records.`);
 
       const roster: StudentRosterItem[] = (sData || []).map(s => {
-        const sCourses = (cData || []).filter(c => c.student_id === s.id);
+        // Defensive: ensure id is treated as string
+        const studentId = String(s.id);
+        const sCourses = (cData || []).filter(c => String(c.student_id) === studentId);
+        
         const gpaRes = calculateGPA(sCourses.map(c => ({
-          letter_grade: c.letter_grade,
-          credit_hours: Number(c.credit_hours)
+          letter_grade: c.letter_grade || "F",
+          credit_hours: Number(c.credit_hours) || 0
         })));
 
         const sStats = calculateStudentStats(
           sCourses.map(c => ({
-            course_code: c.course_code,
-            letter_grade: c.letter_grade,
-            credit_hours: Number(c.credit_hours)
+            course_code: c.course_code || "UNK",
+            letter_grade: c.letter_grade || "F",
+            credit_hours: Number(c.credit_hours) || 0
           })),
           gpaRes.gpa
         );
@@ -130,9 +136,9 @@ function AdvisorDashboard() {
         else if (gpaRes.gpa >= 3.6) sStatus = "honor";
 
         return {
-          id: s.id,
-          full_name: s.full_name,
-          registration_number: s.registration_number,
+          id: studentId,
+          full_name: s.full_name || "Unknown Student",
+          registration_number: s.registration_number || "00000000",
           enrollment_year: s.enrollment_year,
           gpa: gpaRes.gpa,
           credits: gpaRes.totalCredits,
@@ -144,8 +150,8 @@ function AdvisorDashboard() {
 
       setStudents(roster);
     } catch (err) {
-      console.error("Roster Load Error:", err);
-      toast.error("Critical: Could not synchronize student records.");
+      console.error("[Advisor] Roster Load Error:", err);
+      toast.error("Roster synchronization failed.");
     } finally {
       setLoading(false);
     }
