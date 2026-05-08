@@ -58,6 +58,8 @@ type StudentRosterItem = {
   status: "at-risk" | "warning" | "stable" | "honor";
   stats: StudentStats;
   courses: any[];
+  specialization: { title: string; color: string; icon: any };
+  failCount: number;
 };
 
 function AdvisorRoute() {
@@ -84,6 +86,7 @@ function AdvisorDashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "at-risk" | "honor" | "graduating">("all");
   const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
+  const [advisorNote, setAdvisingNote] = useState("");
 
   // Curriculum Catalog State
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -93,42 +96,53 @@ function AdvisorDashboard() {
   const fetchRoster = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("[Advisor] Fetching student roster...");
-      // 1. Get all students
       const { data: sData, error: sErr } = await supabase
         .from("students")
         .select("*")
         .order("full_name", { ascending: true });
 
       if (sErr) throw sErr;
-      console.log(`[Advisor] Found ${sData?.length || 0} students.`);
 
-      // 2. Get all courses
-      const { data: cData, error: cErr } = await supabase
-        .from("courses")
-        .select("*");
-
+      const { data: cData, error: cErr } = await supabase.from("courses").select("*");
       if (cErr) throw cErr;
-      console.log(`[Advisor] Found ${cData?.length || 0} total course records.`);
 
-      const roster: StudentRosterItem[] = (sData || []).map(s => {
-        // Defensive: ensure id is treated as string
+      const roster: StudentRosterItem[] = (sData || []).map((s) => {
         const studentId = String(s.id);
-        const sCourses = (cData || []).filter(c => String(c.student_id) === studentId);
-        
-        const gpaRes = calculateGPA(sCourses.map(c => ({
-          letter_grade: c.letter_grade || "F",
-          credit_hours: Number(c.credit_hours) || 0
-        })));
+        const sCourses = (cData || []).filter((c) => String(c.student_id) === studentId);
+
+        const gpaRes = calculateGPA(
+          sCourses.map((c) => ({
+            letter_grade: c.letter_grade || "F",
+            credit_hours: Number(c.credit_hours) || 0,
+          })),
+        );
 
         const sStats = calculateStudentStats(
-          sCourses.map(c => ({
+          sCourses.map((c) => ({
             course_code: c.course_code || "UNK",
             letter_grade: c.letter_grade || "F",
-            credit_hours: Number(c.credit_hours) || 0
+            credit_hours: Number(c.credit_hours) || 0,
           })),
-          gpaRes.gpa
+          gpaRes.gpa,
         );
+
+        // Specialization Logic
+        let automationCount = 0;
+        let aiCount = 0;
+        let fCount = 0;
+        sCourses.forEach((c) => {
+          if (c.letter_grade === "F") fCount++;
+          const code = (c.course_code || "").toUpperCase();
+          const cur = CURRICULUM_BY_CODE[code];
+          if (cur?.semester === "Conc. 1") automationCount++;
+          if (cur?.semester === "Conc. 2") aiCount++;
+        });
+
+        const spec = automationCount > aiCount 
+          ? { title: "Automation", color: "text-blue-400", icon: Cpu }
+          : aiCount > automationCount 
+          ? { title: "AI Track", color: "text-purple-400", icon: Brain }
+          : { title: "General", color: "text-muted-foreground", icon: Zap };
 
         let sStatus: StudentRosterItem["status"] = "stable";
         if (gpaRes.gpa < 2.0) sStatus = "at-risk";
@@ -144,7 +158,9 @@ function AdvisorDashboard() {
           credits: gpaRes.totalCredits,
           status: sStatus,
           stats: sStats,
-          courses: sCourses
+          courses: sCourses,
+          specialization: spec,
+          failCount: fCount
         };
       });
 
@@ -160,6 +176,19 @@ function AdvisorDashboard() {
   useEffect(() => {
     fetchRoster();
   }, [fetchRoster]);
+
+  // Load note when student selected
+  useEffect(() => {
+    if (selectedStudent) {
+      setAdvisingNote(localStorage.getItem(`note_${selectedStudent.id}`) || "");
+    }
+  }, [selectedStudent]);
+
+  const saveNote = () => {
+    if (!selectedStudent) return;
+    localStorage.setItem(`note_${selectedStudent.id}`, advisorNote);
+    toast.success("Advising note saved.");
+  };
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
@@ -495,21 +524,6 @@ function AdvisorDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function StatTile({ label, value, color }: { label: string, value: string | number, color: string }) {
-  const borderMap: Record<string, string> = {
-    primary: "border-primary shadow-primary/10",
-    destructive: "border-destructive shadow-destructive/10",
-    emerald: "border-emerald-500 shadow-emerald-500/10",
-    accent: "border-accent shadow-accent/10"
-  };
-  return (
-    <div className={`glass-strong rounded-[2rem] p-6 border-l-[8px] shadow-2xl transition-transform hover:scale-[1.02] ${borderMap[color] || 'border-white/10'}`}>
-      <div className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-2 opacity-50">{label}</div>
-      <div className="text-3xl sm:text-4xl font-black truncate tracking-tighter leading-none">{value}</div>
     </div>
   );
 }
