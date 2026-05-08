@@ -379,13 +379,40 @@ function AdvisorDashboard() {
 
               {selectedStudent && (
                  <div className="space-y-10">
-                    {/* Metrics Grid */}
+                    {/* 1. Academic Vitals */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                        <VitalCard label="CUMULATIVE GPA" value={selectedStudent.gpa.toFixed(2)} color={selectedStudent.gpa < 2.0 ? "text-destructive" : "text-primary"} />
                        <VitalCard label="EARNED CREDITS" value={`${selectedStudent.credits}`} color="text-foreground" />
                        <VitalCard label="TERMS PASSED" value={`${selectedStudent.stats.graduationAudit.coreSemestersCompleted}`} color="text-foreground" />
-                       <VitalCard label="CONC. STATUS" value={`${selectedStudent.stats.graduationAudit.concentrationCredits} Cr`} color="text-foreground" />
+                       <VitalCard label="REMAINING" value={`${144 - selectedStudent.credits} CR`} color="text-amber-400" />
                     </div>
+
+                    {/* 1.5 Load Decision Panel */}
+                    <section className="glass rounded-[2rem] p-6 border border-primary/20 bg-primary/5">
+                       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                          <div>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Administrative Load Decision</h4>
+                             <p className="text-[11px] text-muted-foreground font-medium">Formally set the student's enrollment capacity for the next term.</p>
+                          </div>
+                          <Select 
+                            defaultValue={localStorage.getItem(`load_${selectedStudent.id}`) || "normal"}
+                            onValueChange={(v) => {
+                               localStorage.setItem(`load_${selectedStudent.id}`, v);
+                               toast.success(`Load set to ${v.toUpperCase()} for ${selectedStudent.full_name}`);
+                            }}
+                          >
+                             <SelectTrigger className="w-full sm:w-[180px] h-12 rounded-2xl bg-white/5 border-white/10 font-black uppercase text-[10px] tracking-widest">
+                                <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="half" className="text-amber-400">Half Load (9-12 Cr)</SelectItem>
+                                <SelectItem value="normal" className="text-emerald-400">Normal Load (15-18 Cr)</SelectItem>
+                                <SelectItem value="overload" className="text-sky-400">Overload (18+ Cr)</SelectItem>
+                             </SelectContent>
+                          </Select>
+                       </div>
+                    </section>
+
 
                     {/* Advisor Actions */}
                     <section className="space-y-6">
@@ -421,12 +448,46 @@ function AdvisorDashboard() {
                        </div>
                     </section>
 
-                    {/* Enrollment History */}
-                    <section className="space-y-4 pb-12">
+                    {/* 4. Journey Summary */}
+                    <section className="space-y-6">
                        <div className="flex items-center justify-between">
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Academic Ledger</h4>
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Curriculum Gaps (Remaining)</h4>
+                          <span className="text-[9px] font-black uppercase text-amber-400">Action Required</span>
+                       </div>
+
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {SEMESTERS.map(sem => {
+                             const remainingInSem = CURRICULUM.filter(c => 
+                                c.semester === sem && 
+                                !selectedStudent.courses.some(sc => sc.course_code === c.code.toUpperCase() && sc.letter_grade !== "F")
+                             );
+
+                             if (remainingInSem.length === 0) return null;
+
+                             return (
+                                <div key={sem} className="glass rounded-2xl p-4 border border-white/5">
+                                   <div className="text-[9px] font-black uppercase tracking-widest text-primary mb-3">Semester {sem}</div>
+                                   <div className="space-y-2">
+                                      {remainingInSem.map(c => (
+                                         <div key={c.code} className="flex items-center justify-between gap-2">
+                                            <div className="text-[11px] font-bold truncate opacity-80">{c.name}</div>
+                                            <Badge variant="outline" className="text-[8px] border-white/10 shrink-0">{c.credits} Cr</Badge>
+                                         </div>
+                                      ))}
+                                   </div>
+                                </div>
+                             );
+                          })}
+                       </div>
+                    </section>
+
+                    {/* 5. Enrollment History */}
+                    <section className="space-y-4 pb-12">
+                       <div className="flex items-center justify-between border-t border-white/5 pt-8">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Academic Ledger (History)</h4>
                           <span className="text-[9px] font-black uppercase opacity-40">{selectedStudent.courses.length} TOTAL SUBJECTS</span>
                        </div>
+
                        <div className="grid sm:grid-cols-2 gap-3">
                           {selectedStudent.courses.slice(0, 10).map(c => (
                              <div key={c.id} className="flex items-center justify-between p-4 glass rounded-2xl border-white/5 hover:border-white/10 transition-all">
