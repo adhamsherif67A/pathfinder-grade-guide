@@ -66,6 +66,15 @@ function rowFromCurriculum(c: CurriculumCourse): Row {
 }
 
 function GpaCalculatorRoute() {
+  const { role } = useAppContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (role === 'advisor') {
+      navigate({ to: "/advisor" });
+    }
+  }, [role, navigate]);
+
   return (
     <AppShell>
       <GpaCalculatorPage />

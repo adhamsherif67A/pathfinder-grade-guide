@@ -189,7 +189,7 @@ export function AppShell({
           <header className="sticky top-0 z-30 w-full hidden md:block border-b border-white/5 bg-background/50 backdrop-blur-xl">
             <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <Link to="/dashboard" className="flex items-center gap-3">
+                <Link to={role === 'advisor' ? "/advisor" : "/dashboard"} className="flex items-center gap-3">
                   <img src={edupathLogo} alt="Logo" className="h-10 w-10 rounded-xl bg-white p-1" />
                   <div>
                     <div className="text-sm font-bold">EduPath Analytics</div>

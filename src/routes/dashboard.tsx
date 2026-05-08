@@ -35,6 +35,15 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardRoute() {
+  const { role } = useAppContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (role === 'advisor') {
+      navigate({ to: "/advisor" });
+    }
+  }, [role, navigate]);
+
   return (
     <AppShell>
       <DashboardPage />

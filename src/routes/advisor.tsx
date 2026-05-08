@@ -42,7 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { calculateGPA, GRADE_OPTIONS } from "@/lib/gpa";
 import { calculateStudentStats, type StudentStats } from "@/lib/student-stats";
-import { CURRICULUM, SEMESTERS } from "@/lib/curriculum";
+import { CURRICULUM, CURRICULUM_BY_CODE, SEMESTERS } from "@/lib/curriculum";
 
 export const Route = createFileRoute("/advisor")({
   component: AdvisorRoute,
@@ -346,7 +346,7 @@ function AdvisorDashboard() {
 
       {/* 3. Student Control Dialog */}
       <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
-        <DialogContent className="max-w-4xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-[3rem] h-[90vh] sm:h-auto flex flex-col">
+        <DialogContent className="max-w-4xl glass-strong border-white/10 p-0 overflow-hidden sm:rounded-[3rem] h-[90vh] sm:h-[85vh] flex flex-col">
            <div className="p-6 sm:p-10 h-full flex flex-col overflow-y-auto custom-scrollbar">
               <DialogHeader className="mb-10">
                  <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
