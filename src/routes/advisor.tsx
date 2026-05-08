@@ -230,17 +230,9 @@ function AdvisorDashboard() {
     <div className="space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gradient uppercase tracking-tighter">Advisor Portal</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm font-bold uppercase tracking-widest opacity-60">Full Control & Oversight</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-gradient uppercase tracking-tighter">Student Roster</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm font-bold uppercase tracking-widest opacity-60">Departmental Management Hub</p>
         </div>
-      </div>
-
-      {/* 1. Roster Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 px-1">
-        <StatTile label="Students" value={stats.total} color="primary" />
-        <StatTile label="At Risk" value={stats.atRisk} color="destructive" />
-        <StatTile label="Grad Ready" value={stats.ready} color="emerald" />
-        <StatTile label="Program GPA" value={stats.avgGpa.toFixed(2)} color="accent" />
       </div>
 
       {/* 2. Search & List */}

@@ -201,13 +201,19 @@ export function AppShell({
               </div>
 
               <nav className="flex items-center gap-1">
-                {role === "advisor" && navItem("/advisor", "Roster", Users)}
-                {navItem("/dashboard", "Home", LayoutDashboard)}
-                {navItem("/roadmap", "Roadmap", Compass)}
-                {navItem("/degree-planner", "Planner", Map)}
-                {navItem("/gpa-calculator", "Calculator", Calculator)}
-                {role === "student" && navItem("/profile", "Profile", UserIcon)}
-              </nav>
+                  {role === 'advisor' ? (
+                    navItem("/advisor", "Roster", Users)
+                  ) : (
+                    <>
+                      {navItem("/dashboard", "Home", LayoutDashboard)}
+                      {navItem("/roadmap", "Roadmap", Compass)}
+                      {navItem("/degree-planner", "Planner", Map)}
+                      {navItem("/gpa-calculator", "Calculator", Calculator)}
+                      {navItem("/profile", "Profile", UserIcon)}
+                    </>
+                  )}
+                </nav>
+
 
               <div className="flex items-center gap-3">
                 <ThemeToggle />
@@ -272,8 +278,6 @@ export function AppShell({
             {role === "advisor" ? (
               <>
                 {mobileNavItem("/advisor", "Roster", Users)}
-                {mobileNavItem("/dashboard", "Stats", LayoutDashboard)}
-                {mobileNavItem("/roadmap", "Map", Compass)}
               </>
             ) : (
               <>
