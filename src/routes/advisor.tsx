@@ -233,7 +233,10 @@ function AdvisorDashboard() {
   const filteredCatalog = useMemo(() => {
     const q = catSearch.trim().toLowerCase();
     return CURRICULUM.filter((c) => {
-      if (catFilterSem !== "all" && c.semester !== catFilterSem) return false;
+      // If a Summer term is selected, show all courses to allow flexible summer enrollment
+      const isSummerFilter = catFilterSem.startsWith("Summer");
+      if (catFilterSem !== "all" && !isSummerFilter && c.semester !== catFilterSem) return false;
+      
       if (!q) return true;
       return c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
     });
