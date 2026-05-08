@@ -213,13 +213,44 @@ function AdvisorDashboard() {
 
   const enrollFromCatalog = async (c: typeof CURRICULUM[0]) => {
     if (!selectedStudent) return;
+
+    // 1. Check for duplicates (Already Passed)
+    const alreadyPassed = selectedStudent.courses.some(
+      (sc) => sc.course_code === c.code.toUpperCase() && !["F", "W"].includes(sc.letter_grade),
+    );
+
+    if (alreadyPassed) {
+      toast.error(`${selectedStudent.full_name} has already passed ${c.code}.`);
+      return;
+    }
+
+    // 2. PREREQUISITE INTELLIGENCE
+    if (c.prerequisite) {
+      const passedCodes = new Set(
+        selectedStudent.courses
+          .filter((sc) => !["F", "W"].includes(sc.letter_grade))
+          .map((sc) => sc.course_code.toUpperCase()),
+      );
+
+      const prereqs = c.prerequisite.split("&").map((s) => s.trim().toUpperCase());
+      const missing = prereqs.filter((p) => {
+        if (p.includes("CR. HR.")) return false; // Skip credit hour checks for now
+        return !passedCodes.has(p);
+      });
+
+      if (missing.length > 0) {
+        toast.error(`Ineligible: ${selectedStudent.full_name} is missing prerequisites (${missing.join(", ")}).`);
+        return;
+      }
+    }
+
     try {
       const { error } = await supabase.from("courses").insert({
         student_id: selectedStudent.id,
         course_code: c.code.toUpperCase(),
         course_name: c.name,
-        letter_grade: "A", 
-        credit_hours: c.credits
+        letter_grade: "A",
+        credit_hours: c.credits,
       } as never);
 
       if (error) throw error;
@@ -227,6 +258,24 @@ function AdvisorDashboard() {
       fetchRoster();
     } catch (err) {
       toast.error("Enrollment failed.");
+    }
+  };
+
+  const withdrawCourse = async (courseId: string, courseCode: string) => {
+    if (!selectedStudent) return;
+    if (!window.confirm(`Withdraw ${selectedStudent.full_name} from ${courseCode}? (Grade set to W)`)) return;
+
+    try {
+      const { error } = await supabase
+        .from("courses")
+        .update({ letter_grade: "W" } as never)
+        .eq("id", courseId);
+
+      if (error) throw error;
+      toast.success(`Withdrawn: ${courseCode}`);
+      fetchRoster();
+    } catch (err) {
+      toast.error("Withdrawal failed.");
     }
   };
 
@@ -543,23 +592,31 @@ function AdvisorDashboard() {
                        </div>
 
                        <div className="grid sm:grid-cols-2 gap-3">
-                          {selectedStudent.courses.slice(0, 10).map(c => (
-                             <div key={c.id} className="flex items-center justify-between p-4 glass rounded-2xl border-white/5 hover:border-white/10 transition-all">
+                          {selectedStudent.courses.map(c => (
+                             <div key={c.id} className="flex items-center justify-between p-4 glass rounded-2xl border-white/5 hover:border-white/10 transition-all group">
                                 <div className="min-w-0">
                                    <div className="text-[10px] font-mono text-primary uppercase font-black">{c.course_code}</div>
                                    <div className="text-sm font-bold truncate tracking-tight">{c.course_name}</div>
                                 </div>
-                                <Badge className={`font-black text-[10px] rounded-lg h-7 px-3 border-none ${c.letter_grade === 'F' ? 'bg-destructive/20 text-destructive shadow-[0_0_15px_rgba(var(--color-destructive-rgb),0.1)]' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                                   {c.letter_grade}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                   <Badge className={`font-black text-[10px] rounded-lg h-7 px-3 border-none ${c.letter_grade === 'F' ? 'bg-destructive/20 text-destructive shadow-[0_0_15px_rgba(var(--color-destructive-rgb),0.1)]' : c.letter_grade === 'W' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                                      {c.letter_grade}
+                                   </Badge>
+                                   {c.letter_grade !== 'W' && (
+                                     <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-amber-400"
+                                      onClick={() => withdrawCourse(c.id, c.course_code)}
+                                      title="Withdraw Student"
+                                     >
+                                        <XCircle className="h-4 w-4" />
+                                     </Button>
+                                   )}
+                                </div>
                              </div>
                           ))}
                        </div>
-                       {selectedStudent.courses.length > 10 && (
-                          <div className="text-[10px] text-center text-muted-foreground italic font-black uppercase tracking-widest opacity-40 pt-4">
-                             + Browse Visual Roadmap for full record history
-                          </div>
-                       )}
                     </section>
                  </div>
               )}

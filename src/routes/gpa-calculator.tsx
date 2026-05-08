@@ -176,10 +176,14 @@ function GpaCalculatorPage() {
   const addBlank = () => setRows((rs) => [...rs, emptyRow()]);
 
   const enroll = (c: CurriculumCourse) => {
-    if (enrolledCodes.has(c.code)) {
-      toast.info(`${c.code} already enrolled`);
+    const code = c.code.toUpperCase();
+    
+    // Check if ALREADY in the current ledger (avoid UI duplicates)
+    if (enrolledCodes.has(code)) {
+      toast.info(`${code} is already in your ledger.`);
       return;
     }
+
     setRows((rs) => {
       const last = rs[rs.length - 1];
       if (last && !last.course_code && !last.course_name.trim()) {
@@ -187,7 +191,7 @@ function GpaCalculatorPage() {
       }
       return [...rs, rowFromCurriculum(c)];
     });
-    toast.success(`Enrolled in ${c.code}`);
+    toast.success(`Enrolled in ${code}`);
   };
 
   const reset = () => {

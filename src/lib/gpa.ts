@@ -11,6 +11,7 @@ export const GRADE_POINTS: Record<string, number> = {
   "D+": 1.3,
   D: 1.0,
   F: 0.0,
+  W: 0.0,
 };
 
 export const GRADE_OPTIONS = Object.keys(GRADE_POINTS);
@@ -28,6 +29,9 @@ export function calculateGPA(courses: CourseInput[]): {
   let totalPoints = 0;
   let totalCredits = 0;
   for (const c of courses) {
+    // 'W' (Withdrawn) does not affect GPA divisor or points
+    if (c.letter_grade === "W") continue;
+
     const pts = GRADE_POINTS[c.letter_grade];
     const credits = Number(c.credit_hours) || 0;
     if (pts === undefined || credits <= 0) continue;

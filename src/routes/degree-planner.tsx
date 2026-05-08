@@ -226,12 +226,23 @@ function DegreePlannerPage() {
   const filteredCatalog = useMemo(() => {
     return CURRICULUM.filter(c => {
       const code = c.code.toUpperCase();
-      const isAlreadyIn = enrolledCodes.has(code) || plannedCourses.some(p => p.course_code === code);
-      if (isAlreadyIn) return false;
+      
+      // ALLOW planning if:
+      // 1. Not in current GPA records at all OR
+      // 2. Present in records but marked as Failed (F) or Withdrawn (W)
+      const inProgressOrPassed = enrolledCodes.has(code) && !passedCodes.has(code);
+      const isAlreadyPlanned = plannedCourses.some(p => p.course_code === code);
+      
+      // If they passed it, they can't plan it again
+      if (passedCodes.has(code)) return false;
+      
+      // If it's already in the future plan, don't show in catalog
+      if (isAlreadyPlanned) return false;
+
       if (!searchTerm) return true;
       return c.code.toLowerCase().includes(searchTerm.toLowerCase()) || c.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
-  }, [enrolledCodes, plannedCourses, searchTerm]);
+  }, [enrolledCodes, passedCodes, plannedCourses, searchTerm]);
 
   if (loading) return <div className="text-center py-20 text-muted-foreground italic animate-pulse">Syncing roadmap data...</div>;
 
