@@ -119,27 +119,41 @@ function RoadmapPage() {
       </div>
 
       <div className="space-y-12 pb-20">
-        {SEMESTERS.map((sem) => (
-          <section key={sem} className="relative">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/30 grid place-items-center shrink-0">
-                <Calendar className="h-5 w-5 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight">
-                {sem.startsWith("Conc") ? sem : `Semester ${sem}`}
-              </h2>
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 to-transparent" />
-            </div>
+        {SEMESTERS.map((sem) => {
+          const coursesInSem = roadmap.filter((c) => c.semester === sem);
+          // Hide empty summer terms to keep the roadmap clean
+          if (coursesInSem.length === 0 && sem.startsWith("Summer")) return null;
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {roadmap
-                .filter((c) => c.semester === sem)
-                .map((course) => (
-                  <RoadmapCard key={course.code} course={course} />
-                ))}
-            </div>
-          </section>
-        ))}
+          return (
+            <section key={sem} className="relative">
+              <div className="flex items-center gap-4 mb-6">
+                <div
+                  className={`h-10 w-10 rounded-full border grid place-items-center shrink-0 ${sem.startsWith("Summer") ? "bg-amber-400/10 border-amber-400/30" : "bg-primary/20 border-primary/30"}`}
+                >
+                  {sem.startsWith("Summer") ? (
+                    <Zap className="h-5 w-5 text-amber-400" />
+                  ) : (
+                    <Calendar className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <h2 className={`text-2xl font-bold tracking-tight ${sem.startsWith("Summer") ? "text-amber-400" : ""}`}>
+                  {sem.startsWith("Conc") ? sem : sem.startsWith("Summer") ? sem : `Semester ${sem}`}
+                </h2>
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 to-transparent" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {coursesInSem.length > 0 ? (
+                  coursesInSem.map((course) => <RoadmapCard key={course.code} course={course} />)
+                ) : (
+                  <div className="col-span-full py-4 text-xs text-muted-foreground italic border-2 border-dashed border-white/5 rounded-2xl text-center">
+                    No subjects assigned to this term yet.
+                  </div>
+                )}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

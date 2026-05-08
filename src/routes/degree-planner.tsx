@@ -248,7 +248,7 @@ function DegreePlannerPage() {
     );
   }
 
-  const plannerSemesters = ["1", "2", "3", "4", "5", "6", "7", "8", "Conc. 1", "Conc. 2"];
+  const plannerSemesters = ["1", "2", "Summer 1", "3", "4", "Summer 2", "5", "6", "Summer 3", "7", "8", "Summer 4", "Conc. 1", "Conc. 2"];
 
   return (
     <div className="space-y-6 pb-24 md:pb-20">

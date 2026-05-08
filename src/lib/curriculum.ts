@@ -530,4 +530,19 @@ export const CURRICULUM_BY_CODE: Record<string, CurriculumCourse> = Object.fromE
   CURRICULUM.map((c) => [c.code, c]),
 );
 
-export const SEMESTERS = ["1", "2", "3", "4", "5", "6", "7", "8", "Conc. 1", "Conc. 2"] as const;
+export const SEMESTERS = [
+  "1",
+  "2",
+  "Summer 1",
+  "3",
+  "4",
+  "Summer 2",
+  "5",
+  "6",
+  "Summer 3",
+  "7",
+  "8",
+  "Summer 4",
+  "Conc. 1",
+  "Conc. 2",
+] as const;
