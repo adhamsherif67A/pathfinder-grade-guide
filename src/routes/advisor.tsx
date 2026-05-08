@@ -17,7 +17,10 @@ import {
   BookOpen,
   Calendar,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  Cpu,
+  Brain,
+  Zap,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
