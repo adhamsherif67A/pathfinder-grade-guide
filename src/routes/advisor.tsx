@@ -43,6 +43,11 @@ import {
 import { useAppContext } from "@/lib/app-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  buildReportCsv,
+  downloadCsv,
+  downloadReportPdf,
+} from "@/lib/report-export";
 import { calculateGPA, GRADE_OPTIONS } from "@/lib/gpa";
 import { calculateStudentStats, type StudentStats } from "@/lib/student-stats";
 import { CURRICULUM, CURRICULUM_BY_CODE, SEMESTERS } from "@/lib/curriculum";
@@ -434,8 +439,8 @@ function AdvisorDashboard() {
                        </div>
                     </section>
 
-                    {/* Graduation Audit View */}
-                    <section className="glass rounded-[2.5rem] p-8 border border-white/5 space-y-6">
+                    {/* 3. Detailed Audit */}
+                    <section className="glass rounded-[2rem] p-8 border border-white/5 space-y-6">
                        <div className="flex items-center gap-3 mb-2">
                           <ClipboardCheck className="h-6 w-6 text-primary" />
                           <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Verification Checklist</h4>
@@ -445,6 +450,52 @@ function AdvisorDashboard() {
                           <AuditItem label="Credit Accumulation (144+)" isDone={selectedStudent.credits >= 144} />
                           <AuditItem label="Core Semester Logic (1-8)" isDone={selectedStudent.stats.graduationAudit.coreSemestersCompleted === 8} />
                           <AuditItem label="Track Specialization" isDone={selectedStudent.stats.graduationAudit.concentrationCredits >= 6} />
+                       </div>
+                    </section>
+
+                    {/* 3.5. Official Document Exports */}
+                    <section className="space-y-4">
+                       <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-1">Official Document Exports</h4>
+                       <div className="grid grid-cols-2 gap-4">
+                          <Button 
+                            variant="outline"
+                            className="h-16 rounded-[1.5rem] gap-4 border-emerald-500/20 text-emerald-400 bg-emerald-500/5 font-black uppercase tracking-widest text-xs active:scale-95 transition-all shadow-xl shadow-emerald-500/5"
+                            onClick={async () => {
+                               try {
+                                  await downloadReportPdf({
+                                     courses: selectedStudent.courses,
+                                     student: { 
+                                        full_name: selectedStudent.full_name, 
+                                        registration_number: selectedStudent.registration_number 
+                                     },
+                                     filename: `Official_Transcript_${selectedStudent.registration_number}.pdf`
+                                  });
+                                  toast.success("Professional PDF Transcript generated.");
+                               } catch (err) {
+                                  toast.error("Failed to generate PDF.");
+                               }
+                            }}
+                          >
+                             <ClipboardCheck className="h-6 w-6" /> Export PDF Transcript
+                          </Button>
+
+                          <Button 
+                            variant="outline"
+                            className="h-16 rounded-[1.5rem] gap-4 border-sky-500/20 text-sky-400 bg-sky-500/5 font-black uppercase tracking-widest text-xs active:scale-95 transition-all shadow-xl shadow-sky-500/5"
+                            onClick={() => {
+                               const csv = buildReportCsv({
+                                  courses: selectedStudent.courses,
+                                  student: { 
+                                     full_name: selectedStudent.full_name, 
+                                     registration_number: selectedStudent.registration_number 
+                                  }
+                               });
+                               downloadCsv(`Transcript_Data_${selectedStudent.registration_number}.csv`, csv);
+                               toast.success("Excel CSV Data exported.");
+                            }}
+                          >
+                             <BookOpen className="h-6 w-6" /> Export Excel CSV
+                          </Button>
                        </div>
                     </section>
 
