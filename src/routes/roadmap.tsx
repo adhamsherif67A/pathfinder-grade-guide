@@ -121,8 +121,6 @@ function RoadmapPage() {
       <div className="space-y-12 pb-20">
         {SEMESTERS.map((sem) => {
           const coursesInSem = roadmap.filter((c) => c.semester === sem);
-          // Hide empty summer terms to keep the roadmap clean
-          if (coursesInSem.length === 0 && sem.startsWith("Summer")) return null;
 
           return (
             <section key={sem} className="relative">
@@ -146,8 +144,8 @@ function RoadmapPage() {
                 {coursesInSem.length > 0 ? (
                   coursesInSem.map((course) => <RoadmapCard key={course.code} course={course} />)
                 ) : (
-                  <div className="col-span-full py-4 text-xs text-muted-foreground italic border-2 border-dashed border-white/5 rounded-2xl text-center">
-                    No subjects assigned to this term yet.
+                  <div className="col-span-full py-10 text-xs text-muted-foreground/30 font-black uppercase tracking-[0.3em] border-2 border-dashed border-white/5 rounded-[2rem] text-center">
+                    No subjects assigned to this term
                   </div>
                 )}
               </div>
