@@ -349,7 +349,7 @@ function DegreePlannerPage() {
                   </Button>
                </div>
                <DialogDescription className="text-[12px] uppercase font-black tracking-[0.2em] opacity-40 mt-3 ml-1 text-primary">
-                  Select a subject to enroll <strong>{targetStudent.name}</strong>
+                  Select a subject to enroll <strong>{targetStudent?.name || "Student"}</strong>
                </DialogDescription>
             </DialogHeader>
 
