@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Lock, Unlock, Flag, Info, Calendar, Compass } from "lucide-react";
+import { CheckCircle2, Lock, Unlock, Flag, Info, Calendar, Compass, Zap } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { useAppContext } from "@/lib/app-context";
