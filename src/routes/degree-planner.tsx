@@ -57,13 +57,17 @@ function DegreePlannerPage() {
   const [loading, setLoading] = useState(true);
   const [isCommitting, setIsCommitting] = useState(false);
   
+  // UI State
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (ctxLoading) return;
     
+    // Determine which ID to act upon
     const idToLoad = studentId || currentStudent?.id;
+    
+    // If we're an advisor and no studentId was passed, we can't plan
     if (!idToLoad) {
       setLoading(false);
       return;
@@ -72,39 +76,43 @@ function DegreePlannerPage() {
     async function loadData() {
       setLoading(true);
       try {
-        // 1) Identity
+        // 1. Resolve Identity
         if (studentId) {
           const { data: sData } = await supabase.from("students").select("full_name").eq("id", studentId).maybeSingle();
           if (sData) setTargetStudent({ id: studentId, name: sData.full_name });
+          else setTargetStudent(null);
         } else if (currentStudent) {
           setTargetStudent({ id: currentStudent.id, name: currentStudent.full_name });
         }
 
-        // 2) Academic Record
-        const { data } = await supabase
+        // 2. Fetch Academic Record (Passed + In Progress)
+        const { data: courseData } = await supabase
           .from("courses")
           .select("course_code, letter_grade")
           .eq("student_id", idToLoad);
 
-        if (data) {
-          const passed = new Set<string>();
-          const enrolled = new Set<string>();
-          data.forEach(d => {
-            const code = (d.course_code || "").trim().toUpperCase();
-            if (code) {
-              enrolled.add(code);
-              if (d.letter_grade !== "F") passed.add(code);
-            }
-          });
-          setPassedCodes(passed);
-          setEnrolledCodes(enrolled);
-        } else {
-          setPassedCodes(new Set());
-          setEnrolledCodes(new Set());
-        }
+        const passed = new Set<string>();
+        const enrolled = new Set<string>();
         
+        (courseData || []).forEach(d => {
+          const code = (d.course_code || "").trim().toUpperCase();
+          if (code) {
+            enrolled.add(code);
+            if (d.letter_grade !== "F") passed.add(code);
+          }
+        });
+        
+        setPassedCodes(passed);
+        setEnrolledCodes(enrolled);
+        
+        // 3. Load Plan
         const savedPlan = localStorage.getItem(`plan_${idToLoad}`);
         if (savedPlan) setPlannedCourses(JSON.parse(savedPlan));
+        else setPlannedCourses([]);
+        
+      } catch (err) {
+        console.error("Load Error:", err);
+        toast.error("Failed to load student context.");
       } finally {
         setLoading(false);
       }
