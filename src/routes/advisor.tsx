@@ -95,6 +95,10 @@ function AdvisorDashboard() {
   const [filter, setFilter] = useState<"all" | "at-risk" | "honor" | "graduating">("all");
   const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
   const [advisorNote, setAdvisingNote] = useState("");
+  
+  // Edit Mode State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>(null);
 
   // Curriculum Catalog State
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -173,17 +177,44 @@ function AdvisorDashboard() {
       });
 
       setStudents(roster);
+      // Sync selected student if open
+      if (selectedStudent) {
+         const updated = roster.find(r => r.id === selectedStudent.id);
+         if (updated) setSelectedStudent(updated);
+      }
     } catch (err) {
       console.error("[Advisor] Roster Load Error:", err);
       toast.error("Roster synchronization failed.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedStudent]);
 
   useEffect(() => {
     fetchRoster();
-  }, [fetchRoster]);
+  }, []);
+
+  const saveCourseEdit = async () => {
+    if (!editingId || !editForm) return;
+    try {
+      const { error } = await supabase
+        .from("courses")
+        .update({
+          course_code: editForm.course_code.toUpperCase(),
+          course_name: editForm.course_name,
+          letter_grade: editForm.letter_grade,
+          credit_hours: Number(editForm.credit_hours)
+        } as never)
+        .eq("id", editingId);
+
+      if (error) throw error;
+      toast.success("Academic record updated.");
+      setEditingId(null);
+      fetchRoster();
+    } catch (err) {
+      toast.error("Failed to update course.");
+    }
+  };
 
   // Load note when student selected
   useEffect(() => {
@@ -591,31 +622,102 @@ function AdvisorDashboard() {
                           <span className="text-[9px] font-black uppercase opacity-40">{selectedStudent.courses.length} TOTAL SUBJECTS</span>
                        </div>
 
-                       <div className="grid sm:grid-cols-2 gap-3">
-                          {selectedStudent.courses.map(c => (
-                             <div key={c.id} className="flex items-center justify-between p-4 glass rounded-2xl border-white/5 hover:border-white/10 transition-all group">
-                                <div className="min-w-0">
-                                   <div className="text-[10px] font-mono text-primary uppercase font-black">{c.course_code}</div>
-                                   <div className="text-sm font-bold truncate tracking-tight">{c.course_name}</div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                   <Badge className={`font-black text-[10px] rounded-lg h-7 px-3 border-none ${c.letter_grade === 'F' ? 'bg-destructive/20 text-destructive shadow-[0_0_15px_rgba(var(--color-destructive-rgb),0.1)]' : c.letter_grade === 'W' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                                      {c.letter_grade}
-                                   </Badge>
-                                   {c.letter_grade !== 'W' && (
-                                     <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-amber-400"
-                                      onClick={() => withdrawCourse(c.id, c.course_code)}
-                                      title="Withdraw Student"
-                                     >
-                                        <XCircle className="h-4 w-4" />
-                                     </Button>
+                       <div className="grid grid-cols-1 gap-3">
+                          {selectedStudent.courses.map(c => {
+                             const isEditing = editingId === c.id;
+
+                             return (
+                                <div key={c.id} className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 glass rounded-2xl border transition-all group ${isEditing ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-white/5 hover:border-white/10'}`}>
+                                   {isEditing ? (
+                                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                         <div className="space-y-1">
+                                            <div className="text-[8px] font-black uppercase text-primary ml-1">Code</div>
+                                            <Input 
+                                              value={editForm.course_code}
+                                              onChange={(e) => setEditForm({ ...editForm, course_code: e.target.value.toUpperCase() })}
+                                              className="h-9 rounded-xl bg-white/5 border-white/10 font-mono text-[10px]"
+                                            />
+                                         </div>
+                                         <div className="space-y-1 sm:col-span-1">
+                                            <div className="text-[8px] font-black uppercase text-primary ml-1">Subject Name</div>
+                                            <Input 
+                                              value={editForm.course_name}
+                                              onChange={(e) => setEditForm({ ...editForm, course_name: e.target.value })}
+                                              className="h-9 rounded-xl bg-white/5 border-white/10 text-xs font-bold"
+                                            />
+                                         </div>
+                                         <div className="space-y-1">
+                                            <div className="text-[8px] font-black uppercase text-primary ml-1">Grade</div>
+                                            <Select 
+                                              value={editForm.letter_grade}
+                                              onValueChange={(v) => setEditForm({ ...editForm, letter_grade: v })}
+                                            >
+                                               <SelectTrigger className="h-9 rounded-xl bg-white/5 border-white/10 text-[10px] font-black">
+                                                  <SelectValue />
+                                               </SelectTrigger>
+                                               <SelectContent>
+                                                  {GRADE_OPTIONS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                                               </SelectContent>
+                                            </Select>
+                                         </div>
+                                         <div className="space-y-1">
+                                            <div className="text-[8px] font-black uppercase text-primary ml-1">Credits</div>
+                                            <Input 
+                                              type="number"
+                                              value={editForm.credit_hours}
+                                              onChange={(e) => setEditForm({ ...editForm, credit_hours: e.target.value })}
+                                              className="h-9 rounded-xl bg-white/5 border-white/10 font-mono text-[10px]"
+                                            />
+                                         </div>
+                                      </div>
+                                   ) : (
+                                      <div className="flex-1 min-w-0">
+                                         <div className="flex items-center gap-2 mb-1">
+                                            <div className="text-[10px] font-mono text-primary uppercase font-black">{c.course_code}</div>
+                                            <div className="text-[9px] font-bold text-muted-foreground opacity-60 px-2 py-0.5 rounded-lg bg-white/5">{c.credit_hours} Cr</div>
+                                         </div>
+                                         <div className="text-sm font-bold truncate tracking-tight">{c.course_name}</div>
+                                      </div>
                                    )}
+
+                                   <div className="flex items-center justify-end gap-2 mt-4 sm:mt-0 sm:ml-6">
+                                      {isEditing ? (
+                                         <>
+                                            <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} className="h-9 rounded-xl text-[10px] font-black uppercase tracking-widest px-4">Cancel</Button>
+                                            <Button onClick={saveCourseEdit} size="sm" className="h-9 rounded-xl text-[10px] font-black uppercase tracking-widest px-6 shadow-xl shadow-primary/20">Save Change</Button>
+                                         </>
+                                      ) : (
+                                         <>
+                                            <Badge className={`font-black text-[10px] rounded-lg h-8 px-4 border-none shadow-sm ${c.letter_grade === 'F' ? 'bg-destructive/20 text-destructive' : c.letter_grade === 'W' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                                               {c.letter_grade}
+                                            </Badge>
+                                            <Button 
+                                             variant="ghost" 
+                                             size="icon" 
+                                             className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 transition-all text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                             onClick={() => {
+                                                setEditingId(c.id);
+                                                setEditForm({ ...c });
+                                             }}
+                                            >
+                                               <Settings className="h-4 w-4" />
+                                            </Button>
+                                            {c.letter_grade !== 'W' && (
+                                              <Button 
+                                               variant="ghost" 
+                                               size="icon" 
+                                               className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 transition-all text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10"
+                                               onClick={() => withdrawCourse(c.id, c.course_code)}
+                                              >
+                                                 <XCircle className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                         </>
+                                      )}
+                                   </div>
                                 </div>
-                             </div>
-                          ))}
+                             );
+                          })}
                        </div>
                     </section>
                  </div>
