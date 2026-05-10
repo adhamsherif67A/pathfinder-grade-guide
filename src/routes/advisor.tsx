@@ -203,6 +203,32 @@ function AdvisorDashboard() {
     fetchRoster();
   }, []);
 
+  const autoPlanRetake = (studentId: string, courseCode: string) => {
+    const course = CURRICULUM_BY_CODE[courseCode.toUpperCase()];
+    if (!course) return;
+
+    // Determine target summer semester based on original semester
+    let targetSummer = "Summer 1";
+    const s = course.semester;
+    if (s === "1" || s === "2") targetSummer = "Summer 1";
+    else if (s === "3" || s === "4") targetSummer = "Summer 2";
+    else if (s === "5" || s === "6") targetSummer = "Summer 3";
+    else if (s === "7" || s === "8") targetSummer = "Summer 4";
+    else targetSummer = "Summer 1"; // Default
+
+    // Update localStorage plan
+    const planKey = `plan_${studentId}`;
+    const savedPlan = localStorage.getItem(planKey);
+    const plan: any[] = savedPlan ? JSON.parse(savedPlan) : [];
+
+    // Don't duplicate if already planned
+    if (plan.some(p => p.course_code === course.code.toUpperCase())) return;
+
+    plan.push({ course_code: course.code.toUpperCase(), semester: targetSummer });
+    localStorage.setItem(planKey, JSON.stringify(plan));
+    toast.info(`Subject auto-assigned to ${targetSummer} for recovery.`);
+  };
+
   const saveCourseEdit = async () => {
     if (!editingId || !editForm) return;
     try {
@@ -217,6 +243,12 @@ function AdvisorDashboard() {
         .eq("id", editingId);
 
       if (error) throw error;
+      
+      // AUTO PLAN RETAKE
+      if (["F", "W"].includes(editForm.letter_grade)) {
+         autoPlanRetake(selectedStudent!.id, editForm.course_code);
+      }
+
       toast.success("Academic record updated.");
       setEditingId(null);
       fetchRoster();
@@ -329,6 +361,12 @@ function AdvisorDashboard() {
       } as never);
 
       if (error) throw error;
+      
+      // PROACTIVE AUTO-PLANNING
+      if (["F", "W"].includes(enrollGrade)) {
+         autoPlanRetake(selectedStudent.id, pendingCourse.code);
+      }
+
       toast.success(`Enrolled: ${pendingCourse.code} with grade ${enrollGrade}`);
       setEnrollConfirmOpen(false);
       setPendingCourse(null);
