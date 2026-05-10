@@ -68,6 +68,7 @@ type StudentRosterItem = {
   courses: any[];
   specialization: { title: string; color: string; icon: any };
   failCount: number;
+  recommendedLoad: "half" | "normal" | "overload";
 };
 
 function AdvisorRoute() {
@@ -170,6 +171,11 @@ function AdvisorDashboard() {
         else if (gpaRes.gpa < 2.5) sStatus = "warning";
         else if (gpaRes.gpa >= 3.6) sStatus = "honor";
 
+        // Automated Load Decision Logic
+        let recommendedLoad: "half" | "normal" | "overload" = "normal";
+        if (gpaRes.gpa >= 3.4) recommendedLoad = "overload";
+        else if (gpaRes.gpa < 2.0) recommendedLoad = "half";
+
         return {
           id: studentId,
           full_name: s.full_name || "Unknown Student",
@@ -181,7 +187,8 @@ function AdvisorDashboard() {
           stats: sStats,
           courses: sCourses,
           specialization: spec,
-          failCount: fCount
+          failCount: fCount,
+          recommendedLoad
         };
       });
 
@@ -561,13 +568,14 @@ function AdvisorDashboard() {
                     <th className="pb-4 pl-6">Student Profile</th>
                     <th className="pb-4 text-center">Current GPA</th>
                     <th className="pb-4 text-center">Progress</th>
+                    <th className="pb-4 text-center">System Load</th>
                     <th className="pb-4">Audit Result</th>
                     <th className="pb-4 text-right pr-6">Management</th>
                  </tr>
               </thead>
               <tbody>
                  {filteredStudents.length === 0 ? (
-                    <tr><td colSpan={5} className="py-20 text-center text-muted-foreground italic">No student matches found.</td></tr>
+                    <tr><td colSpan={6} className="py-20 text-center text-muted-foreground italic">No student matches found.</td></tr>
                  ) : filteredStudents.map(student => (
                     <tr key={student.id} className="group transition-all">
                        <td className="bg-white/5 first:rounded-l-[1.5rem] last:rounded-r-[1.5rem] py-4 pl-6 border-y border-white/5">
@@ -586,6 +594,11 @@ function AdvisorDashboard() {
                        </td>
                        <td className="bg-white/5 py-4 text-center border-y border-white/5">
                           <div className="text-sm font-black text-muted-foreground">{student.credits} <span className="text-[10px] opacity-40">/ 144</span></div>
+                       </td>
+                       <td className="bg-white/5 py-4 text-center border-y border-white/5">
+                          {student.recommendedLoad === 'overload' && <Badge className="bg-sky-500/10 text-sky-400 border-none text-[8px] font-black uppercase px-2">Overload</Badge>}
+                          {student.recommendedLoad === 'normal' && <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[8px] font-black uppercase px-2">Normal</Badge>}
+                          {student.recommendedLoad === 'half' && <Badge className="bg-amber-500/10 text-amber-400 border-none text-[8px] font-black uppercase px-2">Half Load</Badge>}
                        </td>
                        <td className="bg-white/5 py-4 border-y border-white/5">
                           {student.stats.graduationAudit.isReady ? (
@@ -651,29 +664,30 @@ function AdvisorDashboard() {
                        <VitalCard label="REMAINING" value={`${144 - selectedStudent.credits} CR`} color="text-amber-400" />
                     </div>
 
-                    {/* 1.5 Load Decision Panel */}
+                    {/* 1.5 Load Decision Panel (Automated) */}
                     <section className="glass rounded-[2rem] p-6 border border-primary/20 bg-primary/5">
                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                           <div>
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Administrative Load Decision</h4>
-                             <p className="text-[11px] text-muted-foreground font-medium">Formally set the student's enrollment capacity for the next term.</p>
+                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Automated Load Decision</h4>
+                             <p className="text-[11px] text-muted-foreground font-medium italic">System analysis based on current academic performance.</p>
                           </div>
-                          <Select 
-                            defaultValue={localStorage.getItem(`load_${selectedStudent.id}`) || "normal"}
-                            onValueChange={(v) => {
-                               localStorage.setItem(`load_${selectedStudent.id}`, v);
-                               toast.success(`Load set to ${v.toUpperCase()} for ${selectedStudent.full_name}`);
-                            }}
-                          >
-                             <SelectTrigger className="w-full sm:w-[180px] h-12 rounded-2xl bg-white/5 border-white/10 font-black uppercase text-[10px] tracking-widest">
-                                <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent>
-                                <SelectItem value="half" className="text-amber-400">Half Load (9-12 Cr)</SelectItem>
-                                <SelectItem value="normal" className="text-emerald-400">Normal Load (15-18 Cr)</SelectItem>
-                                <SelectItem value="overload" className="text-sky-400">Overload (18+ Cr)</SelectItem>
-                             </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-3">
+                             {selectedStudent.recommendedLoad === 'overload' && (
+                                <Badge className="h-12 px-6 rounded-2xl bg-sky-500/20 text-sky-400 border-sky-500/30 font-black uppercase tracking-widest text-[10px]">
+                                   Overload Permitted
+                                </Badge>
+                             )}
+                             {selectedStudent.recommendedLoad === 'normal' && (
+                                <Badge className="h-12 px-6 rounded-2xl bg-emerald-500/20 text-emerald-400 border-emerald-500/30 font-black uppercase tracking-widest text-[10px]">
+                                   Normal Load
+                                </Badge>
+                             )}
+                             {selectedStudent.recommendedLoad === 'half' && (
+                                <Badge className="h-12 px-6 rounded-2xl bg-amber-500/20 text-amber-400 border-amber-500/30 font-black uppercase tracking-widest text-[10px]">
+                                   Reduced Load (Half)
+                                </Badge>
+                             )}
+                          </div>
                        </div>
                     </section>
 
