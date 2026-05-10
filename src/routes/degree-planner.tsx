@@ -375,12 +375,16 @@ function DegreePlannerPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-5 pr-2 custom-scrollbar pb-32 sm:pb-4 touch-pan-y overscroll-contain">
-               {filteredCatalog.map(course => (
-                  <div key={course.code} className={`glass-strong rounded-[2.5rem] p-7 border transition-all duration-500 hover:scale-[1.01] ${course.uclan ? 'border-l-[12px] border-l-[#FFC000]' : 'border-white/10'}`}>
+               {filteredCatalog.map(course => {
+                  const isRetake = enrolledCodes.has(course.code.toUpperCase()) && !passedCodes.has(course.code.toUpperCase());
+                  
+                  return (
+                  <div key={course.code} className={`glass-strong rounded-[2.5rem] p-7 border transition-all duration-500 hover:scale-[1.01] ${course.uclan ? 'border-l-[12px] border-l-[#FFC000]' : isRetake ? 'border-l-[12px] border-l-destructive' : 'border-white/10'}`}>
                     <div className="mb-8">
                         <div className="flex items-center gap-4 mb-3">
                            <span className="font-mono text-sm text-primary font-black uppercase tracking-[0.2em] bg-primary/10 px-3 py-1 rounded-xl">{course.code}</span>
                            {course.uclan && <Badge className="bg-[#FFC000] text-black text-[10px] h-6 border-none font-black px-3 rounded-full">UK DUAL CERTIFIED</Badge>}
+                           {isRetake && <Badge className="bg-destructive/20 text-destructive text-[10px] h-6 border-none font-black px-3 rounded-full gap-2"><AlertTriangle className="h-3 w-3"/> RETAKE REQUIRED</Badge>}
                         </div>
                         <h4 className="font-black text-xl sm:text-2xl leading-none tracking-tighter mb-3">{course.name}</h4>
                         <div className="flex flex-wrap gap-2">
@@ -397,7 +401,7 @@ function DegreePlannerPage() {
                               key={sem}
                               size="sm"
                               variant="outline"
-                              className="h-11 min-w-[80px] px-4 rounded-[1rem] text-[11px] font-black border-white/10 bg-white/5 hover:bg-primary hover:text-primary-foreground hover:border-none transition-all active:scale-90"
+                              className={`h-11 min-w-[80px] px-4 rounded-[1rem] text-[11px] font-black border-white/10 bg-white/5 hover:bg-primary hover:text-primary-foreground hover:border-none transition-all active:scale-90 ${sem.startsWith("Summer") ? "text-amber-400 border-amber-400/20" : ""}`}
                               onClick={() => addToPlan(course.code, sem)}
                             >
                               Sem {sem}
@@ -406,7 +410,8 @@ function DegreePlannerPage() {
                        </div>
                     </div>
                   </div>
-               ))}
+                  );
+               })}
             </div>
             
             <div className="sm:hidden fixed bottom-6 left-6 right-6 z-[70]">

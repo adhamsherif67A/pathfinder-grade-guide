@@ -55,7 +55,7 @@ export function calculateStudentStats(
   // 2. Credits Calculation
   const totalMechatronicsCredits = 144;
   const earnedCredits = courses.reduce((acc, c) => {
-    if (c.letter_grade !== "F") return acc + c.credit_hours;
+    if (!["F", "W"].includes(c.letter_grade)) return acc + c.credit_hours;
     return acc;
   }, 0);
 
@@ -64,7 +64,7 @@ export function calculateStudentStats(
   const totalUclanCredits = uclanCourses.reduce((acc, c) => acc + c.credits, 0);
 
   const earnedUclanCredits = courses.reduce((acc, c) => {
-    if (c.letter_grade === "F" || !c.course_code) return acc;
+    if (["F", "W"].includes(c.letter_grade) || !c.course_code) return acc;
     const curriculumCourse = CURRICULUM_BY_CODE[c.course_code.trim().toUpperCase()];
     if (curriculumCourse?.uclan) {
       return acc + c.credit_hours;
@@ -108,7 +108,7 @@ export function calculateStudentStats(
     });
 
     // Core / Conc Audit
-    if (c.letter_grade !== "F") {
+    if (!["F", "W"].includes(c.letter_grade)) {
       if (curriculum) {
         if (["1", "2", "3", "4", "5", "6", "7", "8"].includes(curriculum.semester)) {
           coreSems.add(curriculum.semester);

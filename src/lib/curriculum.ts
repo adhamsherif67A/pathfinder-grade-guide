@@ -546,3 +546,7 @@ export const SEMESTERS = [
   "Conc. 1",
   "Conc. 2",
 ] as const;
+
+export const SEMESTER_ORDER = Object.fromEntries(
+  SEMESTERS.map((s, i) => [s, i])
+);

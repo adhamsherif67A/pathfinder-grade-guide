@@ -1,4 +1,4 @@
-import { CURRICULUM, CURRICULUM_BY_CODE, type CurriculumCourse } from "./curriculum";
+import { CURRICULUM, CURRICULUM_BY_CODE, SEMESTER_ORDER, type CurriculumCourse } from "./curriculum";
 
 export type PlannedCourse = {
   course_code: string;
@@ -13,8 +13,6 @@ export type PrerequisiteViolation = {
 
 /**
  * Validates a degree plan against the curriculum prerequisites.
- * @param completedCourseCodes Codes of courses the student has already passed.
- * @param plannedCourses List of courses planned for future semesters.
  */
 export function validateDegreePlan(
   completedCourseCodes: Set<string>,
@@ -22,28 +20,26 @@ export function validateDegreePlan(
 ): PrerequisiteViolation[] {
   const violations: PrerequisiteViolation[] = [];
 
-  // Sort planned courses by semester to check prerequisites chronologically
-  const sortedPlan = [...plannedCourses].sort((a, b) => Number(a.semester) - Number(b.semester));
+  // Sort planned courses by semester using official SEMESTER_ORDER
+  const sortedPlan = [...plannedCourses].sort((a, b) => {
+    const orderA = SEMESTER_ORDER[a.semester] ?? 999;
+    const orderB = SEMESTER_ORDER[b.semester] ?? 999;
+    return orderA - orderB;
+  });
 
-  // Track what will be "available" as we iterate through the plan
   const currentlyAvailable = new Set(completedCourseCodes);
 
   for (const plan of sortedPlan) {
     const course = CURRICULUM_BY_CODE[plan.course_code];
     if (!course || !course.prerequisite) {
-      currentlyAvailable.add(plan.course_code);
+      currentlyAvailable.add(plan.course_code.toUpperCase());
       continue;
     }
 
-    // Handle complex prerequisites (e.g., "EBA1104 & EBA1402" or "30 Cr. Hr.")
     const prereqStr = course.prerequisite;
-
-    // Simple split by '&' for now. For "30 Cr. Hr." we'd need more logic,
-    // but we'll focus on course-to-course dependencies first.
-    const individualPrereqs = prereqStr.split("&").map((s) => s.trim());
+    const individualPrereqs = prereqStr.split("&").map((s) => s.trim().toUpperCase());
 
     for (const prereq of individualPrereqs) {
-      // Skip credit hour requirements for this simple version
       if (prereq.toLowerCase().includes("cr. hr.")) continue;
 
       if (!currentlyAvailable.has(prereq)) {
@@ -55,58 +51,67 @@ export function validateDegreePlan(
       }
     }
 
-    // After checking, we assume they pass and it becomes available for the NEXT semesters in the plan
-    currentlyAvailable.add(plan.course_code);
+    currentlyAvailable.add(plan.course_code.toUpperCase());
   }
 
   return violations;
 }
 
-export type CourseStatus = "completed" | "enrolled" | "planned" | "unlocked" | "locked";
+export type CourseStatus = "completed" | "enrolled" | "failed" | "withdrawn" | "planned" | "unlocked" | "locked";
 
 export type RoadmapCourse = CurriculumCourse & {
   status: CourseStatus;
 };
 
 /**
- * Calculates the roadmap status for all courses in the curriculum.
+ * Calculates the roadmap status for all courses, supporting multiple instances for retakes.
  */
 export function getCourseRoadmap(
-  passedCourseCodes: Set<string>,
-  enrolledCourseCodes: Set<string>,
+  studentCourses: any[], // Full record from Supabase
   plannedCourses: PlannedCourse[],
 ): RoadmapCourse[] {
-  const plannedSet = new Set(plannedCourses.map((p) => p.course_code.toUpperCase()));
+  const roadmap: RoadmapCourse[] = [];
+  
+  const passedSet = new Set(studentCourses.filter(c => !['F', 'W'].includes(c.letter_grade)).map(c => c.course_code.toUpperCase()));
+  const recordMap = new Map<string, string>(); // code -> latest grade
+  studentCourses.forEach(c => recordMap.set(c.course_code.toUpperCase(), c.letter_grade));
 
-  return CURRICULUM.map((course) => {
-    const code = course.code.toUpperCase();
-
-    if (passedCourseCodes.has(code)) {
-      return { ...course, status: "completed" as CourseStatus };
+  // 1. Map base curriculum
+  CURRICULUM.forEach(base => {
+    const code = base.code.toUpperCase();
+    const grade = recordMap.get(code);
+    
+    let status: CourseStatus = "locked";
+    
+    if (grade) {
+       if (grade === 'F') status = "failed";
+       else if (grade === 'W') status = "withdrawn";
+       else status = "completed";
+    } else {
+       // Check if unlocked
+       if (!base.prerequisite) {
+          status = "unlocked";
+       } else {
+          const prereqs = base.prerequisite.split("&").map(s => s.trim().toUpperCase());
+          const isUnlocked = prereqs.every(p => p.includes("CR. HR.") || passedSet.has(p));
+          status = isUnlocked ? "unlocked" : "locked";
+       }
     }
 
-    if (enrolledCourseCodes.has(code)) {
-      return { ...course, status: "enrolled" as CourseStatus };
-    }
-
-    if (plannedSet.has(code)) {
-      return { ...course, status: "planned" as CourseStatus };
-    }
-
-    // Check if unlocked (all prerequisites met by COMPLETED courses)
-    if (!course.prerequisite) {
-      return { ...course, status: "unlocked" as CourseStatus };
-    }
-
-    const prereqs = course.prerequisite.split("&").map((s) => s.trim().toUpperCase());
-    const isUnlocked = prereqs.every((p) => {
-      if (p.includes("CR. HR.")) return true;
-      return passedCourseCodes.has(p);
-    });
-
-    return {
-      ...course,
-      status: (isUnlocked ? "unlocked" : "locked") as CourseStatus,
-    };
+    roadmap.push({ ...base, status });
   });
+
+  // 2. Map planned courses (Retakes or Future)
+  plannedCourses.forEach(plan => {
+     const base = CURRICULUM_BY_CODE[plan.course_code.toUpperCase()];
+     if (base) {
+        roadmap.push({
+           ...base,
+           semester: plan.semester, // Overwrite with planned semester
+           status: "planned" as CourseStatus
+        });
+     }
+  });
+
+  return roadmap;
 }

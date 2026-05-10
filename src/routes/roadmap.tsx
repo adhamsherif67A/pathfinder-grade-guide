@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Lock, Unlock, Flag, Info, Calendar, Compass, Zap } from "lucide-react";
+import { CheckCircle2, Lock, Unlock, Flag, Info, Calendar, Compass, Zap, AlertTriangle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { useAppContext } from "@/lib/app-context";
@@ -30,8 +30,7 @@ function RoadmapPage() {
   const { studentId } = Route.useSearch();
 
   const [targetStudent, setTargetStudent] = useState<{ id: string; name: string } | null>(null);
-  const [passedCodes, setPassedCodes] = useState<Set<string>>(new Set());
-  const [enrolledCodes, setEnrolledCodes] = useState<Set<string>>(new Set());
+  const [studentCourses, setStudentCourses] = useState<any[]>([]);
   const [plannedCourses, setPlannedCourses] = useState<PlannedCourse[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,49 +45,40 @@ function RoadmapPage() {
 
     async function loadData() {
       setLoading(true);
-      // 1) Fetch student name if it's an external ID
-      if (studentId) {
-        const { data: sData } = await supabase
-          .from("students")
-          .select("full_name")
-          .eq("id", studentId)
-          .maybeSingle();
-        if (sData) setTargetStudent({ id: studentId, name: sData.full_name });
-      } else if (currentStudent) {
-        setTargetStudent({ id: currentStudent.id, name: currentStudent.full_name });
+      try {
+        // 1) Fetch student name if it's an external ID
+        if (studentId) {
+          const { data: sData } = await supabase
+            .from("students")
+            .select("full_name")
+            .eq("id", studentId)
+            .maybeSingle();
+          if (sData) setTargetStudent({ id: studentId, name: sData.full_name });
+        } else if (currentStudent) {
+          setTargetStudent({ id: currentStudent.id, name: currentStudent.full_name });
+        }
+
+        // 2) Fetch academic record with full details
+        const { data } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("student_id", idToLoad);
+
+        if (data) setStudentCourses(data);
+
+        const savedPlan = localStorage.getItem(`plan_${idToLoad}`);
+        if (savedPlan) setPlannedCourses(JSON.parse(savedPlan));
+      } finally {
+        setLoading(false);
       }
-
-      // 2) Fetch academic record
-      const { data } = await supabase
-        .from("courses")
-        .select("course_code, letter_grade")
-        .eq("student_id", idToLoad);
-
-      if (data) {
-        const passed = new Set<string>();
-        const enrolled = new Set<string>();
-        data.forEach((d) => {
-          const code = (d.course_code || "").trim().toUpperCase();
-          if (code) {
-            enrolled.add(code);
-            if (d.letter_grade !== "F") passed.add(code);
-          }
-        });
-        setPassedCodes(passed);
-        setEnrolledCodes(enrolled);
-      }
-
-      const savedPlan = localStorage.getItem(`plan_${idToLoad}`);
-      if (savedPlan) setPlannedCourses(JSON.parse(savedPlan));
-      setLoading(false);
     }
 
     void loadData();
   }, [studentId, currentStudent, ctxLoading]);
 
   const roadmap = useMemo(
-    () => getCourseRoadmap(passedCodes, enrolledCodes, plannedCourses),
-    [passedCodes, enrolledCodes, plannedCourses],
+    () => getCourseRoadmap(studentCourses, plannedCourses),
+    [studentCourses, plannedCourses],
   );
 
   if (loading)
@@ -102,19 +92,20 @@ function RoadmapPage() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gradient uppercase tracking-tighter">
             {targetStudent ? `Roadmap: ${targetStudent.name}` : "Academic Roadmap"}
           </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">
-            Visualizing the 144-credit Mechatronics journey (AAST x UCLAN)
+          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest opacity-60">
+            144-Credit Mechatronics Engineering Cycle (AAST x UCLAN)
           </p>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-3 glass p-4 rounded-2xl border-white/10 shadow-lg">
           <LegendItem icon={CheckCircle2} label="Passed" color="text-emerald-400" />
-          <LegendItem icon={Compass} label="Enrolled" color="text-amber-400" />
+          <LegendItem icon={AlertTriangle} label="Failed" color="text-destructive" />
+          <LegendItem icon={Info} label="Withdrawn" color="text-amber-500" />
           <LegendItem icon={Flag} label="Planned" color="text-primary" />
           <LegendItem icon={Unlock} label="Unlocked" color="text-sky-400" />
-          <LegendItem icon={Lock} label="Locked" color="text-muted-foreground/40" />
+          <LegendItem icon={Lock} label="Locked" color="text-muted-foreground/20" />
         </div>
       </div>
 
@@ -134,7 +125,7 @@ function RoadmapPage() {
                     <Calendar className="h-5 w-5 text-primary" />
                   )}
                 </div>
-                <h2 className={`text-2xl font-bold tracking-tight ${sem.startsWith("Summer") ? "text-amber-400" : ""}`}>
+                <h2 className={`text-2xl font-black uppercase tracking-tighter ${sem.startsWith("Summer") ? "text-amber-400" : ""}`}>
                   {sem.startsWith("Conc") ? sem : sem.startsWith("Summer") ? sem : `Semester ${sem}`}
                 </h2>
                 <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 to-transparent" />
@@ -142,9 +133,9 @@ function RoadmapPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {coursesInSem.length > 0 ? (
-                  coursesInSem.map((course) => <RoadmapCard key={course.code} course={course} />)
+                  coursesInSem.map((course, idx) => <RoadmapCard key={`${course.code}-${idx}`} course={course} />)
                 ) : (
-                  <div className="col-span-full py-10 text-xs text-muted-foreground/30 font-black uppercase tracking-[0.3em] border-2 border-dashed border-white/5 rounded-[2rem] text-center">
+                  <div className="col-span-full py-10 text-[10px] text-muted-foreground/30 font-black uppercase tracking-[0.3em] border-2 border-dashed border-white/5 rounded-[2.5rem] text-center">
                     No subjects assigned to this term
                   </div>
                 )}
@@ -159,45 +150,42 @@ function RoadmapPage() {
 
 function RoadmapCard({ course }: { course: RoadmapCourse }) {
   const isCompleted = course.status === "completed";
-  const isEnrolled = course.status === "enrolled";
+  const isFailed = course.status === "failed";
+  const isWithdrawn = course.status === "withdrawn";
   const isPlanned = course.status === "planned";
   const isUnlocked = course.status === "unlocked";
   const isLocked = course.status === "locked";
 
+  const borderColor = isCompleted ? "border-emerald-500/40 bg-emerald-500/5" :
+                    isFailed ? "border-destructive/40 bg-destructive/5" :
+                    isWithdrawn ? "border-amber-500/40 bg-amber-500/5" :
+                    isPlanned ? "border-primary/40 bg-primary/5 shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.1)]" :
+                    isUnlocked ? "border-sky-500/30 bg-sky-500/5" :
+                    "border-white/5 opacity-50 grayscale";
+
   return (
-    <div
-      className={`glass-strong rounded-2xl p-4 border transition-all duration-500 relative group ${
-        isCompleted
-          ? "border-emerald-500/40 bg-emerald-500/5"
-          : isEnrolled
-            ? "border-amber-500/40 bg-amber-500/5"
-            : isPlanned
-              ? "border-primary/40 bg-primary/5 shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.1)]"
-              : isUnlocked
-                ? "border-sky-500/30 bg-sky-500/5"
-                : "border-white/5 opacity-50 grayscale"
-      }`}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+    <div className={`glass-strong rounded-[2rem] p-5 border transition-all duration-500 relative group ${borderColor}`}>
+      <div className="flex justify-between items-start mb-3">
+        <span className="font-mono text-[10px] text-muted-foreground uppercase font-black tracking-widest">
           {course.code}
         </span>
         {isCompleted && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-        {isEnrolled && <Compass className="h-4 w-4 text-amber-400" />}
+        {isFailed && <AlertTriangle className="h-4 w-4 text-destructive" />}
+        {isWithdrawn && <Info className="h-4 w-4 text-amber-500" />}
         {isPlanned && <Flag className="h-4 w-4 text-primary" />}
         {isUnlocked && <Unlock className="h-4 w-4 text-sky-400" />}
         {isLocked && <Lock className="h-4 w-4 text-muted-foreground/40" />}
       </div>
 
-      <h3 className="font-bold text-sm leading-tight mb-2 line-clamp-2">{course.name}</h3>
+      <h3 className="font-black text-sm leading-tight mb-3 line-clamp-2 uppercase tracking-tight">{course.name}</h3>
 
       <div className="flex items-center gap-2 mt-auto">
-        <Badge variant="outline" className="text-[9px] h-4 py-0 border-white/10">
-          {course.credits} Cr
+        <Badge variant="outline" className="text-[9px] font-black h-5 py-0 border-white/10 uppercase tracking-widest">
+          {course.credits} Credits
         </Badge>
         {course.uclan && (
-          <Badge className="bg-[#FFC000] text-black text-[8px] h-4 py-0 hover:bg-[#FFC000]">
-            UCLAN
+          <Badge className="bg-[#FFC000] text-black text-[8px] font-black h-5 py-0 hover:bg-[#FFC000]">
+            UCLAN UK
           </Badge>
         )}
       </div>
@@ -205,13 +193,12 @@ function RoadmapCard({ course }: { course: RoadmapCourse }) {
       {course.prerequisite && (
         <div className="mt-3 pt-3 border-t border-white/5 flex items-start gap-2">
           <Info className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
-          <p className="text-[9px] text-muted-foreground italic leading-tight">
-            Req: {course.prerequisite}
+          <p className="text-[9px] text-muted-foreground italic font-medium leading-tight">
+            Prerequisite: {course.prerequisite}
           </p>
         </div>
       )}
 
-      {/* Decorative pulse for planned */}
       {isPlanned && (
         <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-ping opacity-75" />
       )}
@@ -223,7 +210,7 @@ function LegendItem({ icon: Icon, label, color }: { icon: React.ElementType; lab
   return (
     <div className="flex items-center gap-2">
       <Icon className={`h-4 w-4 ${color}`} />
-      <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-[9px] uppercase font-black tracking-widest text-muted-foreground">{label}</span>
     </div>
   );
 }
