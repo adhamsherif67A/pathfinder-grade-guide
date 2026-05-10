@@ -210,6 +210,20 @@ function AdvisorDashboard() {
     fetchRoster();
   }, []);
 
+  const removeAutoPlan = (studentId: string, courseCode: string) => {
+    const planKey = `plan_${studentId}`;
+    const savedPlan = localStorage.getItem(planKey);
+    if (!savedPlan) return;
+    
+    const plan: any[] = JSON.parse(savedPlan);
+    const updatedPlan = plan.filter(p => p.course_code !== courseCode.toUpperCase());
+    
+    if (plan.length !== updatedPlan.length) {
+       localStorage.setItem(planKey, JSON.stringify(updatedPlan));
+       toast.info("Recovery plan updated (Retake removed).");
+    }
+  };
+
   const autoPlanRetake = (studentId: string, courseCode: string) => {
     const course = CURRICULUM_BY_CODE[courseCode.toUpperCase()];
     if (!course) return;
@@ -251,9 +265,11 @@ function AdvisorDashboard() {
 
       if (error) throw error;
       
-      // AUTO PLAN RETAKE
+      // SYNC PLAN WITH GRADE CHANGE
       if (["F", "W"].includes(editForm.letter_grade)) {
          autoPlanRetake(selectedStudent!.id, editForm.course_code);
+      } else {
+         removeAutoPlan(selectedStudent!.id, editForm.course_code);
       }
 
       toast.success("Academic record updated.");
@@ -369,9 +385,11 @@ function AdvisorDashboard() {
 
       if (error) throw error;
       
-      // PROACTIVE AUTO-PLANNING
+      // SYNC PLAN WITH GRADE ENTRY
       if (["F", "W"].includes(enrollGrade)) {
          autoPlanRetake(selectedStudent.id, pendingCourse.code);
+      } else {
+         removeAutoPlan(selectedStudent.id, pendingCourse.code);
       }
 
       toast.success(`Enrolled: ${pendingCourse.code} with grade ${enrollGrade}`);
