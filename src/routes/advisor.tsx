@@ -408,16 +408,22 @@ function AdvisorDashboard() {
 
   const clearStudentData = async () => {
     if (!selectedStudent) return;
-    if (!window.confirm(`ERASE ACADEMIC RECORD for ${selectedStudent.full_name}?`)) return;
+    if (!window.confirm(`PERMANENTLY DELETE student ${selectedStudent.full_name}? This will erase all grades and profile data.`)) return;
 
     try {
-      const { error } = await supabase.from("courses").delete().eq("student_id", selectedStudent.id);
-      if (error) throw error;
-      toast.success("Record cleared.");
+      // 1. Delete Courses
+      const { error: cErr } = await supabase.from("courses").delete().eq("student_id", selectedStudent.id);
+      if (cErr) throw cErr;
+
+      // 2. Delete Student
+      const { error: sErr } = await supabase.from("students").delete().eq("id", selectedStudent.id);
+      if (sErr) throw sErr;
+
+      toast.success("Student record permanently deleted.");
       setSelectedStudent(null);
       fetchRoster();
     } catch (err) {
-      toast.error("Reset failed.");
+      toast.error("Deletion failed.");
     }
   };
 
@@ -761,9 +767,13 @@ function AdvisorDashboard() {
 
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {SEMESTERS.map(sem => {
+                             const planKey = `plan_${selectedStudent.id}`;
+                             const savedPlan = localStorage.getItem(planKey);
+                             const planned: any[] = savedPlan ? JSON.parse(savedPlan) : [];
+
                              const remainingInSem = CURRICULUM.filter(c => 
                                 c.semester === sem && 
-                                !selectedStudent.courses.some(sc => sc.course_code === c.code.toUpperCase() && sc.letter_grade !== "F")
+                                !selectedStudent.courses.some(sc => sc.course_code === c.code.toUpperCase() && !["F", "W"].includes(sc.letter_grade))
                              );
 
                              if (remainingInSem.length === 0) return null;
@@ -772,12 +782,20 @@ function AdvisorDashboard() {
                                 <div key={sem} className="glass rounded-2xl p-4 border border-white/5">
                                    <div className="text-[9px] font-black uppercase tracking-widest text-primary mb-3">Semester {sem}</div>
                                    <div className="space-y-2">
-                                      {remainingInSem.map(c => (
-                                         <div key={c.code} className="flex items-center justify-between gap-2">
-                                            <div className="text-[11px] font-bold truncate opacity-80">{c.name}</div>
-                                            <Badge variant="outline" className="text-[8px] border-white/10 shrink-0">{c.credits} Cr</Badge>
-                                         </div>
-                                      ))}
+                                      {remainingInSem.map(c => {
+                                         const isPlanned = planned.some(p => p.course_code === c.code.toUpperCase());
+                                         return (
+                                            <div key={c.code} className="flex items-center justify-between gap-2">
+                                               <div className="min-w-0">
+                                                  <div className="text-[11px] font-bold truncate opacity-80">{c.name}</div>
+                                                  {isPlanned && <div className="text-[7px] font-black text-sky-400 uppercase tracking-widest mt-0.5">Assigned to Recovery Plan</div>}
+                                               </div>
+                                               <Badge variant="outline" className={`text-[8px] border-white/10 shrink-0 ${isPlanned ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : ''}`}>
+                                                  {isPlanned ? 'IN RECOVERY' : `${c.credits} Cr`}
+                                               </Badge>
+                                            </div>
+                                         );
+                                      })}
                                    </div>
                                 </div>
                              );
