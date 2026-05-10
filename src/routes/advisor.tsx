@@ -96,6 +96,10 @@ function AdvisorDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<StudentRosterItem | null>(null);
   const [advisorNote, setAdvisingNote] = useState("");
   
+  // Registration State
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [newStudent, setNewStudent] = useState({ full_name: "", registration_number: "", enrollment_year: new Date().getFullYear() });
+
   // Edit Mode State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
@@ -104,6 +108,11 @@ function AdvisorDashboard() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [catSearch, setCatSearch] = useState("");
   const [catFilterSem, setCatFilterSem] = useState("all");
+
+  // Enrollment Confirmation State
+  const [enrollConfirmOpen, setEnrollConfirmOpen] = useState(false);
+  const [pendingCourse, setPendingCourse] = useState<any>(null);
+  const [enrollGrade, setEnrollGrade] = useState("A");
 
   const fetchRoster = useCallback(async () => {
     setLoading(true);
@@ -229,6 +238,34 @@ function AdvisorDashboard() {
     toast.success("Advising note saved.");
   };
 
+  const registerStudent = async () => {
+    if (!newStudent.full_name || !newStudent.registration_number) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.from("students").insert({
+        full_name: newStudent.full_name,
+        registration_number: newStudent.registration_number.toUpperCase(),
+        enrollment_year: Number(newStudent.enrollment_year)
+      }).select().single();
+
+      if (error) {
+        if (error.code === '23505') toast.error("Registration number already exists.");
+        else throw error;
+        return;
+      }
+
+      toast.success(`Registered: ${data.full_name}`);
+      setRegisterOpen(false);
+      setNewStudent({ full_name: "", registration_number: "", enrollment_year: new Date().getFullYear() });
+      fetchRoster();
+    } catch (err) {
+      toast.error("Registration failed.");
+    }
+  };
+
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       const q = search.toLowerCase();
@@ -242,7 +279,7 @@ function AdvisorDashboard() {
     });
   }, [students, search, filter]);
 
-  const enrollFromCatalog = async (c: typeof CURRICULUM[0]) => {
+  const enrollFromCatalog = (c: typeof CURRICULUM[0]) => {
     if (!selectedStudent) return;
 
     // 1. Check for duplicates (Already Passed)
@@ -255,22 +292,29 @@ function AdvisorDashboard() {
       return;
     }
 
+    setPendingCourse(c);
+    setEnrollConfirmOpen(true);
+  };
+
+  const confirmEnrollment = async () => {
+    if (!selectedStudent || !pendingCourse) return;
+
     // 2. PREREQUISITE INTELLIGENCE
-    if (c.prerequisite) {
+    if (pendingCourse.prerequisite) {
       const passedCodes = new Set(
         selectedStudent.courses
           .filter((sc) => !["F", "W"].includes(sc.letter_grade))
           .map((sc) => sc.course_code.toUpperCase()),
       );
 
-      const prereqs = c.prerequisite.split("&").map((s) => s.trim().toUpperCase());
-      const missing = prereqs.filter((p) => {
+      const prereqs = pendingCourse.prerequisite.split("&").map((s: string) => s.trim().toUpperCase());
+      const missing = prereqs.filter((p: string) => {
         if (p.includes("CR. HR.")) return false; // Skip credit hour checks for now
         return !passedCodes.has(p);
       });
 
       if (missing.length > 0) {
-        toast.error(`Ineligible: ${selectedStudent.full_name} is missing prerequisites (${missing.join(", ")}).`);
+        toast.error(`Ineligible: Missing prerequisites (${missing.join(", ")}).`);
         return;
       }
     }
@@ -278,14 +322,16 @@ function AdvisorDashboard() {
     try {
       const { error } = await supabase.from("courses").insert({
         student_id: selectedStudent.id,
-        course_code: c.code.toUpperCase(),
-        course_name: c.name,
-        letter_grade: "A",
-        credit_hours: c.credits,
+        course_code: pendingCourse.code.toUpperCase(),
+        course_name: pendingCourse.name,
+        letter_grade: enrollGrade,
+        credit_hours: pendingCourse.credits,
       } as never);
 
       if (error) throw error;
-      toast.success(`Enrolled: ${c.code}`);
+      toast.success(`Enrolled: ${pendingCourse.code} with grade ${enrollGrade}`);
+      setEnrollConfirmOpen(false);
+      setPendingCourse(null);
       fetchRoster();
     } catch (err) {
       toast.error("Enrollment failed.");
@@ -350,10 +396,96 @@ function AdvisorDashboard() {
     <div className="space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gradient uppercase tracking-tighter">Student Roster</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm font-bold uppercase tracking-widest opacity-60">Departmental Management Hub</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-gradient uppercase tracking-tighter leading-none">Student Roster</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm font-bold uppercase tracking-widest opacity-60 mt-1">Departmental Management</p>
         </div>
+        <Button 
+          onClick={() => setRegisterOpen(true)}
+          className="rounded-2xl h-12 px-6 gap-2 bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20"
+        >
+          <PlusCircle className="h-5 w-5" /> Register New Student
+        </Button>
       </div>
+
+      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+        <DialogContent className="max-w-md glass-strong border-white/10 p-8 sm:rounded-[2.5rem]">
+           <DialogHeader className="mb-6">
+              <DialogTitle className="text-2xl font-black tracking-tighter uppercase">New Academic Profile</DialogTitle>
+              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Register a student from the beginning</DialogDescription>
+           </DialogHeader>
+
+           <div className="space-y-6">
+              <div className="space-y-2">
+                 <label className="text-[9px] font-black uppercase tracking-widest ml-1 opacity-40">Full Legal Name</label>
+                 <Input 
+                   placeholder="e.g. Adham Sherif"
+                   value={newStudent.full_name}
+                   onChange={(e) => setNewStudent({ ...newStudent, full_name: e.target.value })}
+                   className="h-12 rounded-xl bg-white/5 border-white/10"
+                 />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[9px] font-black uppercase tracking-widest ml-1 opacity-40">Registration Number</label>
+                 <Input 
+                   placeholder="e.g. 21101234"
+                   value={newStudent.registration_number}
+                   onChange={(e) => setNewStudent({ ...newStudent, registration_number: e.target.value })}
+                   className="h-12 rounded-xl bg-white/5 border-white/10 font-mono"
+                 />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[9px] font-black uppercase tracking-widest ml-1 opacity-40">Enrollment Year</label>
+                 <Input 
+                   type="number"
+                   value={newStudent.enrollment_year}
+                   onChange={(e) => setNewStudent({ ...newStudent, enrollment_year: Number(e.target.value) })}
+                   className="h-12 rounded-xl bg-white/5 border-white/10"
+                 />
+              </div>
+
+              <Button onClick={registerStudent} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest mt-4">
+                 Create Record
+              </Button>
+           </div>
+        </DialogContent>
+      </Dialog>
+
+
+      {/* Enrollment Confirmation Dialog */}
+      <Dialog open={enrollConfirmOpen} onOpenChange={setEnrollConfirmOpen}>
+        <DialogContent className="max-w-md glass-strong border-white/10 p-8 sm:rounded-[2.5rem]">
+           <DialogHeader className="mb-6">
+              <DialogTitle className="text-xl font-black tracking-tighter uppercase">Confirm Enrollment</DialogTitle>
+              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">
+                 Assign grade for {pendingCourse?.code}
+              </DialogDescription>
+           </DialogHeader>
+
+           <div className="space-y-6">
+              <div className="p-4 glass rounded-2xl border-white/5">
+                 <div className="text-[10px] font-mono text-primary font-black uppercase mb-1">{pendingCourse?.code}</div>
+                 <div className="text-sm font-bold truncate">{pendingCourse?.name}</div>
+              </div>
+
+              <div className="space-y-2">
+                 <label className="text-[9px] font-black uppercase tracking-widest ml-1 opacity-40">Select Grade</label>
+                 <Select value={enrollGrade} onValueChange={setEnrollGrade}>
+                    <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 font-black">
+                       <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                       {GRADE_OPTIONS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    </SelectContent>
+                 </Select>
+              </div>
+
+              <Button onClick={confirmEnrollment} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest">
+                 Finalize Enrollment
+              </Button>
+           </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* 2. Search & List */}
       <div className="glass-strong rounded-[2.5rem] p-4 sm:p-8 border border-white/5 shadow-2xl">
